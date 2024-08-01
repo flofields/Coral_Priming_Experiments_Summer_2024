@@ -1,0 +1,83 @@
+---
+title: "Photosynthesis parameters summary"
+author: "HM Putnam, AS Huffmyer"
+edited by: "Florence Fields"
+date: "20240617"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(plotrix)
+library(Hmisc)
+library(tidyverse)
+```
+
+# Import PI curve fitted parameters for each individual
+```{r}
+pars <- read_csv("output/physiology/pi_curves/PI_curve_pars_NLS.csv")
+```
+
+# Import sample metadata
+```{r}
+md <- read_csv("../data/physiology/PI_curves/pi_curves_sample_metadata.csv")
+
+df <- left_join(pars, md)
+```
+
+
+# Plot colony_id average PI curves using mean parameter values
+```{r, fig.width = 10}
+#arrange data in long format
+df <- df%>%
+  gather("parameter", "value", 2:4)
+df$parameter<-as.factor(df$parameter)
+df$colony_id<-as.factor(df$colony_id)
+
+# Get mean parameter values for each colony_id and site
+meanpars <- df %>%
+  group_by(colony_id, parameter) %>%
+  dplyr::summarize(meanval = mean(value)) %>%
+  pivot_wider(names_from = parameter, values_from = meanval) %>%
+  #rename(Am = b_Am_Intercept, AQY = b_AQY_Intercept, Rd = b_Rd_Intercept, theta = b_theta_Intercept) %>%
+  ungroup()
+
+# Define PI curve function
+PIfun <- function(I, Am, AQY, Rd) {
+  (Am*((AQY*I)/(sqrt(Am^2 + (AQY*I)^2)))-Rd)
+}
+
+
+# Produce PI curve for each colony_id
+curves <- meanpars %>%
+  nest(pars = c(Am, AQY, Rd)) %>%
+  mutate(I = list(1:1000),
+         PIcurve = map2(pars, I, ~ pmap_dfc(.x, .f = PIfun, I = .y)))   # curve for each par set and Irradiance
+
+# Plot
+pdf("../output/physiology/pi_curves/PI_curves_calc_nls.pdf")
+curves %>% 
+  unnest(cols = c(I, PIcurve)) %>%
+  ggplot(aes(x = I, y = ...1)) +
+  geom_line() +
+  facet_wrap(~ colony_id) +
+  theme_classic()+
+  labs(x = expression(paste('PAR (', mu, "mol photons m"^-2, 's'^-1,")")),
+       y = expression(paste('Photosynthetic rate (', mu, "mol O2 cm"^-2, 'h'^-1,")")),
+       title = "Priming Experiment PI Curves: June 2024")
+dev.off()
+
+# Add saturating irradiance calculation to data sheet by dividing Am (max photosynthetic rate) by AQY (alpha)
+meanpars$Ik <- meanpars$Am / meanpars$AQY
+
+#calculate average Ik saturating irradiance level for future photosynthesis runs
+mean(meanpars$Ik) #Then add the Ik from each colony of the same species and divide by the number of colonies used 
+
+# Save mean photosynthesis pars for each colony to file
+meanpars %>%
+  mutate(experiment="priming") %>%
+  write_csv(path = "../output/physiology/pi_curves/photosynthesis_spars_summary_nls.csv")
+```

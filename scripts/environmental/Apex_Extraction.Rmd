@@ -1,0 +1,168 @@
+---
+title: "Apex_Data_Extraction"
+author: "HM Putnam"
+date: "2024-07-02"
+Edited by: Florence Fields
+output: html_document
+---
+
+Clear your enviroment
+```{r}
+rm(list=ls())
+```
+
+Load Libraries
+```{r}
+library("XML")
+library("plyr")
+library("lubridate")
+library("dplyr")
+```
+
+Set working directory
+```{r}
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024")
+```
+
+```{r}
+#Check Current system time zone and time
+current_tz <- Sys.timezone() 
+print(current_tz)
+
+current_time <- Sys.time()
+print(current_time)
+
+# Set to correct timezone, time and correct date
+Sys.setenv(TZ = "UTC03:00") 
+correct_date <- Sys.Date()
+print(correct_date)
+
+date <- Sys.Date() #set todays date
+time <- Sys.time()
+time <- gsub(":" ,"_",time)
+time <- gsub(" " ,"_",time)
+today <- sub('..', '', date)
+today <- gsub('-', '', today) 
+today <- as.numeric(today)
+#today <- as.numeric(today)-1
+```
+
+Read in xml info
+```{r}
+dailyt.xmlfile <- xmlParse("http://192.168.0.227/cgi-bin/datalog.xml?sdate=240709&days=9") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+Apex.Data <- ldply(xmlToList(dailyt.xmlfile), data.frame) #convert xml to dataframe
+
+write.csv(Apex.Data, paste0("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240801_Apex_Data_Output.csv")) #write file to save data
+```
+
+```{r}
+#Check Current system time zone and time
+current_tz <- Sys.timezone() 
+print(current_tz)
+
+current_time <- Sys.time()
+print(current_time)
+
+# Set to correct timezone, time and correct date
+Sys.setenv(TZ = "UTC03:00") 
+correct_date <- Sys.Date()
+print(correct_date)
+
+date <- Sys.Date() #set todays date
+time <- Sys.time()
+time <- gsub(":" ,"_",time)
+time <- gsub(" " ,"_",time)
+today <- sub('..', '', date)
+today <- gsub('-', '', today) 
+today <- as.numeric(today) 
+```
+```{r}
+
+head(Apex.Data) # check the first few lines to see the first few hrs of the extracted data
+tail(Apex.Data) # check to end to dertmine if the xmlParse extracted up to present day
+apex<- Apex.Data[4:nrow(Apex.Data),] #remove hostname, serial and timezone data metadata from the top
+apex <- head(apex,-2) #remove attrs metadata from the bottom
+
+#test$date <- as.POSIXct(test$date, format = "%m/%d/%Y %H:%M:%S", tz="UTC03:00") #convert date to Bemuda time if have not already
+```
+
+```{r}
+# view data and names to ID the raw probe.name or probe.type or probe.value
+apex
+tail(apex) # check most recent data 
+names(apex)
+```
+```{r}
+# Date.Time = column 3
+
+# CO2_HT_TMP = column 6 = probe.value
+# CO2_HT_pH= column 9 = probe.value.1
+
+# TMP_T2 = column 18 = probe.value.4
+# pH_T2 = column 21 = probe.value.5
+
+# TMP_T3 = column 24 = probe.value.6
+# pH_T3= column 27 = probe.value.7
+
+# TMP_T4 = column 30 = probe.value.8
+# pH_T4 = column 33 = probe.value.9
+
+# TMP_T5 = column 36 = probe.value.10
+# pH_T5 = column 39 = probe.value.11
+
+# TMP_T6 = column 42 = probe.value.12
+# pH_T6 = column 45 = probe.value.13
+
+# TMP_T7 = column 51 = probe.value.14
+# pH_T7 = column 54 = probe.value.16
+```
+
+```{r}
+#keep columnes with data of interest. This needs to be changed as it will be specific to the Apex configuration
+Probe.Data <- apex[,c(3,6,9,18,21,24,27,30,33,36,39,42,45,51,54)] #select columns
+```
+
+```{r}
+Probe.Data2 <- na.omit(Probe.Data) # remove NAs
+
+colnames(Probe.Data) <- c("Date.Time",
+                          "CO2_HT_TMP", "CO2_HT_pH",
+                          "TMP_T2", "pH_T2",
+                          "TMP_T3","pH_T3",
+                          "TMP_T4", "pH_T4",
+                          "TMP_T5", "pH_T5",
+                          "TMP_T6", "pH_T6",
+                          "TMP_T7", "pH_T7")  #rename columns
+tail(Probe.Data) # to view the newest data and compare to APEX fusion for assigning column names
+# CHANGE DATE FOR NEW CSV (risk overwritting previous)
+
+Probe.Data$Date.Time <- as.POSIXct(Probe.Data$Date.Time, format = "%m/%d/%Y %H:%M:%S", tz="UTC03:00") #convert date to Bermuda time
+write.csv(Probe.Data, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240801_Apex_Data_Output.csv") #write file to save data
+```
+
+```{r}
+
+#plot Temp and pH and save to output
+# CHANGE DATE FOR NEW PDF (risk overwritting previous)
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Graphs/20240801_Apex_Data_Output.data.pdf")
+
+par(mfrow=c(2,1))
+plot(as.numeric(as.character(CO2_HT_TMP)) ~ Date.Time, Probe.Data, col = "grey", type="l", ylim=c(20, 32),  xlab="Time", ylab="Temperature °C")
+lines(as.numeric(as.character(TMP_T2)) ~ Date.Time, Probe.Data, col = "red")
+lines(as.numeric(as.character(TMP_T3)) ~ Date.Time, Probe.Data, col = "blue")
+lines(as.numeric(as.character(TMP_T4)) ~ Date.Time, Probe.Data, col = "black")
+lines(as.numeric(as.character(TMP_T5)) ~ Date.Time, Probe.Data, col = "green")
+lines(as.numeric(as.character(TMP_T6)) ~ Date.Time, Probe.Data, col = "purple")
+lines(as.numeric(as.character(TMP_T7)) ~ Date.Time, Probe.Data, col = "orange")
+
+axis.POSIXct(side=1, Probe.Data$Date.Time)
+
+plot(as.numeric(as.character(CO2_HT_pH)) ~ Date.Time, Probe.Data, col = "grey", type="l", ylim=c(6, 8.5),  xlab="Time", ylab="pH NBS")
+lines(as.numeric(as.character(pH_T2)) ~ Date.Time, Probe.Data, col = "red")
+lines(as.numeric(as.character(pH_T3)) ~ Date.Time, Probe.Data, col = "blue")
+lines(as.numeric(as.character(pH_T4)) ~ Date.Time, Probe.Data, col = "black")
+lines(as.numeric(as.character(pH_T5)) ~ Date.Time, Probe.Data, col = "green")
+lines(as.numeric(as.character(pH_T6)) ~ Date.Time, Probe.Data, col = "purple")
+lines(as.numeric(as.character(pH_T7)) ~ Date.Time, Probe.Data, col = "orange")
+axis.POSIXct(side=1, Probe.Data$Date.Time)
+```

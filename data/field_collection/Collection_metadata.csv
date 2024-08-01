@@ -1,1 +1,9 @@
-sample_id,species,lifestage,data_collected,site,treatment,notes
+Colony_id,species,lifestage,data_collected,site,treatment,notes
+MD_1,Madracis decactis,Adult,20240620,Bailey's Flats,27degrees,
+MD_2,Madracis decactis,Adult,20240620,Bailey's Flats,27degrees,
+MD_4,Madracis decactis,Adult,20240620,Bailey's Flats,27degrees,
+MD_5,Madracis decactis,Adult,20240620,Bailey's Flats,27degrees,
+DL_1,Diploria labyrinthiformis,Adult,20240620,Bailey's Flats,27degrees,
+DL_2,Diploria labyrinthiformis,Adult,20240620,Bailey's Flats,27degrees,
+DL_3,Diploria labyrinthiformis,Adult,20240620,Bailey's Flats,27degrees,
+DL_4,Diploria labyrinthiformis,Adult,20240623,Bailey's Flats,27degrees,

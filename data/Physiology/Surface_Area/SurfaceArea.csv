@@ -1,1 +1,2 @@
-Date,Species,PlugID,File Name,Site,Tank,Treatment,Timepoint,Area_cm,Mean,Min,Max,Date analyzed,Notes
+Date,Species,colony_id,File Name,Tank,Treatment,Timepoint,Area_cm,Surface.Area.cm2,Mean,Min,Max,Date analyzed,Notes
+,,,,,,,2,4,,,,,

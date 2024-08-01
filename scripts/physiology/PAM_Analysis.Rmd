@@ -1,0 +1,200 @@
+---
+title: "PAM data analysis"
+author: "Florence Fields"
+date: "2024-06-12"
+output: html_document
+---
+
+This code analyzes the pulse amplitude fluometry (PAM) data that was collected from from adult Mdec and Dlab in Bermuda 2024 as part of the ENCORE priming experiments. 
+
+## Set up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(RColorBrewer)
+library(car)
+library(emmeans)
+library(multcomp)
+library(knitr)
+library(kableExtra)
+library(lme4)
+library(GGally)
+library(lmerTest)
+library(cowplot)
+library(Hmisc)
+library(ggstatsplot)
+```
+
+## First, I am going to analyze the data from the larval samples. 
+
+## Load data 
+```{r}
+pam_data <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Pam/All_Pam_Data.csv", na.strings=c("","NA"))
+head(pam_data)
+tail(pam_data)
+```
+
+## Manipulate data frame 
+
+Remove NAs from colony 
+```{r}
+#pam_data <- pam_data %>%
+#  drop_na(Colony)
+```
+
+Set date
+```{r}
+pam_data$DateMeasured <- as.POSIXct(pam_data$DateMeasured, format = "%m/%d/%y")
+```
+
+rename colounm heads 
+```{r}
+colnames(pam_data)[colnames(pam_data) == "Fo.I."] <- "Fo.I"
+colnames(pam_data)[colnames(pam_data) == "Fo.II."] <- "Fo.II"
+colnames(pam_data)[colnames(pam_data) == "Fo.III."] <- "Fo.III"
+colnames(pam_data)[colnames(pam_data) == "Fm.I."] <- "Fm.I"
+colnames(pam_data)[colnames(pam_data) == "Fm.II."] <- "Fm.II"
+colnames(pam_data)[colnames(pam_data) == "Fm.III."] <- "Fm.III"
+colnames(pam_data)[colnames(pam_data) == "Y.I."] <- "Fv.Fm.I"
+colnames(pam_data)[colnames(pam_data) == "Y.II."] <- "Fv.Fm.II"
+colnames(pam_data)[colnames(pam_data) == "Y.III."] <- "Fv.Fm.III"
+colnames(pam_data)[colnames(pam_data) == "Fo..avg."] <- "Fo.avg"
+colnames(pam_data)[colnames(pam_data) == "Fm..avg."] <- "Fm.avg"
+colnames(pam_data)[colnames(pam_data) == "Y.avg."] <- "Fv.Fm_avg"
+```
+## Make plots, identify outliers and do statistics 
+
+
+Plot Fv/Fm by treatment, species and date
+```{r}
+ggplot(pam_data, aes(x = Treatment, y = Fv.Fm_avg, color = "Species")) +
+  geom_boxplot(aes(color=Treatment), width=.5, outlier.shape= NA)+
+  coord_cartesian(ylim = c(-0, 0.7))+
+  #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
+  #geom_violin(aes(color = Treatment)) +
+  #scale_fill_manual(values=c("lightblue", "pink"))+
+  scale_colour_manual(values=c("blue", "red", "green"))+
+  #theme_bw() +
+  facet_wrap(~ DateMeasured)
+  #geom_boxplot(aes(color = Species)) +
+  #geom_violin()
+```
+
+NEED TO LOOK AT OUTLIERS 
+
+Do stats on Fv/Fm by treatment, species and date 
+```{r}
+model <- aov(Fv.Fm_avg ~ Treatment*Species*DateMeasured, data = pam_data)
+summary(model)
+
+# View post-hoc differences 
+emm = emmeans(model, ~ Treatment*Species*DateMeasured)
+cld(emm, Letters=c(LETTERS)) #letter display
+pairs(emm)
+
+```
+
+Plot Fv/Fm by treatment, species and colony
+```{r}
+ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg, color = Treatment)) +
+  geom_boxplot(aes(colour=Treatment,), width=.5, outlier.shape= NA) +
+  coord_cartesian(ylim = c(-0, 0.7))+
+  #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
+  #geom_violin(aes(color = Treatment)) +
+  #scale_fill_manual(values=c("lightblue", "pink"))+
+  scale_colour_manual(values=c("blue", "red", "green"))+
+  theme_bw() +
+  facet_wrap(~Colony)
+  #geom_boxplot(aes(color = Treatment)) +
+  #geom_violin()
+```
+Do stats on Fv/Fm by treatment, species and colony 
+```{r}
+model <- aov(Fv.Fm_avg ~ Treatment*Species*Colony, data = pam_data)
+summary(model)
+
+# View post-hoc differences 
+emm = emmeans(model, ~ Treatment*Species*Colony)
+cld(emm, Letters=c(LETTERS)) #letter display
+pairs(emm)
+
+```
+
+Plot Fv/Fm by treatment and species
+```{r}
+ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg)) +
+  geom_boxplot(aes(colour=Treatment), width=.5, outlier.shape= NA) +
+  coord_cartesian(ylim = c(-0, 0.7))+
+  #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
+  #geom_violin(aes(color = Treatment)) +
+  #scale_fill_manual(values=c("lightblue", "pink"))+
+  scale_colour_manual(values=c("blue", "red", "green"))+
+  theme_bw()
+  #geom_boxplot(aes(color = Treatment)) +
+  #geom_violin()
+```
+
+Do stats on Fv/Fm by treatment and colony 
+```{r}
+model <- aov(Fv.Fm_avg ~ Treatment*Colony, data = pam_data)
+summary(model)
+
+# View post-hoc differences 
+TukeyHSD(model)
+
+emm = emmeans(model, ~ Treatment*Colony)
+cld(emm, Letters=c(LETTERS)) #letter display
+pairs(emm)
+```
+
+## Count observations 
+
+Calculate the number of measurements grouped by date, treatment and colony
+```{r}
+summary_data <- pam_data %>%
+  group_by(DateMeasured, colony, species, treatment) %>%
+  summarise(observations = n())
+
+summary_data <- pam_data %>%
+  group_by(species, Treatment) %>%
+  summarise(observations = n())
+```
+
+We may only be able to use the measurements with >3 data points per date, treatment and colony if that makes sense. 
+
+Group by colony and plot so that date is the x-axis, Fv/Fm is the y-axis, colors are treatment, and shapes are colony
+```{r}
+test <- pam_data %>%
+  group_by(Colony, DateMeasured, Treatment,species) %>%
+  summarise(mean = mean(Fv.Fm),
+            sd = sd(Fv.Fm)) %>%
+  drop_na(sd)
+
+# Plot
+ggplot(test, aes(x=DateMeasured, y=mean, color = Treatment, shape = species)) +
+  #geom_line() +
+  #geom_boxplot() +
+  geom_point(size = 5) + 
+  scale_shape_manual(values = c(0:15))+ 
+  scale_color_manual(values = c("blue", "red")) +
+  theme_classic()
+```
+There is a violation of variance assumptions. Conduct non-parametric test 
+```{r}
+#kruskal.test(Fv.Fm ~ colony, data = pam_data_spat)
+#kruskal.test(Fv.Fm ~ condition, data = pam_data_spat)
+#kruskal.test(Fv.Fm ~ date, data = pam_data_spat)
+
+# View post-hoc differences 
+#emm = emmeans(model, ~ condition*colony*date)
+#cld(emm, Letters=c(LETTERS)) #letter display
+#pairs(emm)
+```
+
+

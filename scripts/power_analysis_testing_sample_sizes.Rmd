@@ -1,0 +1,76 @@
+---
+title: "ENCORE POWER ANALYSIS"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This power analysis will determine the number of random fragmented corals to be sampled non destrutivley. With the back up fragments the current total is 508 fragments. 
+Non destructive sampling includes fv/fm and respiration. 
+
+Question - How do enviromental priming aid in coral adaptation mechanisms
+Three Treatments - Control, Temperature and pH
+We want to detect a 100%
+I want to be 80% sure of picking up an effect
+
+### two sample t test
+Comparing the means of two independent groups (e.g., treatment vs. control group).
+Example: You’re comparing the effectiveness of two different stress induced groups by analyzing performance  before and after exposure
+
+### paried t test
+This test is used when you have paired observations (e.g., before-and-after measurements on the same subjects).
+Example: You’re assessing whether environmental priming aids in resilience by comparing pre and post measurments for the same individuals.
+
+```{r}
+library("pwr")
+pwr.t.test(n =  , d = 1, sig.level =0.01 , power =0.8 , type = c("two.sample", "one.sample", "paried" ))
+```
+
+```{r}
+library(pwr)
+
+## Effect size 
+# Define parameters
+effect_size <- 0.2  
+alpha <- 0.05
+power <- 0.80
+num_groups <- 6
+
+# Calculate sample size per group
+pwr.t.test(d = effect_size, power = power, sig.level = alpha, type = "two.sample")
+#n= n = 5.089995
+
+
+## Sample size of 5 
+# Define parameters 
+sample_size <- 5  
+alpha <- 0.05
+power <- 0.80
+num_groups <- 6
+
+# Calculate sample size 
+pwr.t.test(n = sample_size, power = power, sig.level = alpha, type = "two.sample")
+#effectsize = d =2.024439
+
+# Sample size of 10 
+sample_size <- 10  
+# Calculate effect size 
+pwr.t.test(n = sample_size, power = power, sig.level = alpha, type = "two.sample")
+#effectsize = d = 1.324947
+
+# Sample size of  
+sample_size <- 21  
+# Calculate effect size 
+pwr.t.test(n = sample_size, power = power, sig.level = alpha, type = "two.sample")
+#effectsize = d = d = 0.88605
+
+# Sample size of  
+sample_size <- 26  
+# Calculate effect size 
+pwr.t.test(n = sample_size, power = power, sig.level = alpha, type = "two.sample")
+#d=0.0.7923522
+
+```
+
