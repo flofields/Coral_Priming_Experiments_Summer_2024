@@ -157,10 +157,6 @@ plot_rankLcRg <- function(fragment_ID, interval_number) {
 }
 ```
 
-#### The diagnostics for any regression can be plotted like this, specifying a fragment_ID and the number of the light curve interval:
-#```
-#plot_rankLcRg("BLK032-38", 1)
-#```
 
 ### Extract slope of best regression for each interval for each sample
 ```{r}
@@ -239,7 +235,7 @@ r_plot<-Resp %>%
     #scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
     #scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
     ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(0,3)+
+    #ylim(0,3)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -249,13 +245,14 @@ dev.off()
 
 pdf("output/Raw_Photo.pdf", width=6, height=6)
 p_plot<-Photo %>%
-    ggplot(., aes(x = Temp.Cat, y = micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+    ggplot(., aes(x = Timepoint, y = micromol.cm2.h, colour=Treatment)) +
+    geom_point(aes(fill=Genotype, group=Genotype), pch = 21, size=2, alpha=0.3) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species), scales = "free")+
+    #scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+    #scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
     ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(-0.5,2)+
+    #ylim(0,3)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -265,229 +262,3 @@ dev.off()
 ```
 
 
-
-December 2022 Data
-## Import data
-```{r, warning = FALSE}
-path.p <- "data/PR/Dec_TPC" #the location of all your respirometry files 
-
-# List data files
-file.names <- list.files(path = path.p, pattern = "csv$")  # list all csv file names in the folder
-file.names <- file.names[!grepl("metadata", file.names)]   # omit metadata from files to be read in as data
-
-# Load PI curve sample metadata (i.e., which corals were in which runs)
-sample.info <- read_csv(file = "data/PR/Dec_TPC/Dec_PR_sample_metadata.csv")
-
-# Load PI curve run metadata (i.e., light levels and interval times for each run)
-run.info <- read_csv(file = "data/PR/Dec_TPC/Dec_PR_run_metadata.csv")
-
-# Join all coral and run metadata
-metadata <- full_join(sample.info, run.info) %>%
-  mutate(Date = as_date(as.character(Date), format = "%Y%m%d", tz = "Tahiti"))
-
-# Select only certain columnns
-metadata <- metadata %>%
-  select(fragment_ID, Run, Treatment, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Value, Temp.Cat)
-
-# Read in all data files
-#edit fragment_ID name to remove .csv and change _TP1 to _1
-df <- tibble(file.name = file.names) %>%
-  mutate(fragment_ID = gsub("_.*", "", file.name)) %>%  # Get fragment_ID from filename and select for info after the first _
-  mutate(fragment_ID = gsub(".csv", "", fragment_ID),  #remove .csv from fragment_ID
-          info = map(fragment_ID, ~filter(metadata, fragment_ID == .)),           # Get associated sample info
-         data0 = map(file.name, ~read_csv(file.path(path.p, .), skip = 1, col_types = cols(.default = "d", Time = "t"))))   # Get associated O2 data
-
-# Select only Time, Value, and Temp columns from O2 data
-df <- df %>%
-  mutate(data0 = map(data0, ~select(., Time, Value, Temp)))%>%
-  mutate(data0 = map(data0, ~(.x %>% filter(complete.cases(.))))) #remove NAs 
-
-```
-
-## Use the time breaks in the sample info to link O2 data with light levels
-```{r, warning = FALSE}
-df <- df %>%
-  mutate(intervals = map2(data0, info, function(.x, .y) {
-    split(.x, f = cut(as.numeric(.x$Time), breaks = as.numeric(c(.y$Start.time, last(.y$Stop.time))),
-                      labels = as.character(.y$Light_Value)))})) %>%
-  mutate(data = map(intervals, ~ unnest(tibble(.), .id = "Light_Value")))
-
-## 'data' now contains the O2 data with the corresponding light level as another column
-## Example of what 'data' for each sample looks like:
-# df$data[[1]]
-
-```
-
-### Thin data
-```{r, fig.height = 8, fig.width = 8}
-# Set thinning parameter
-thin_par <- 20
-
-# Thin data for all samples
-df <- df %>%
-  mutate(thin_data = map(data, ~ slice(., seq(1, nrow(.), thin_par))))
-
-# Create plots for full dataset and thinned data
-df <- df %>%
-  mutate(data_plot = map2(data, fragment_ID, ~ ggplot(.x, aes(x = Time, y = Value)) + 
-                            facet_wrap(~ as.numeric(Light_Value), scales = "free") +
-                            geom_point() +
-                            labs(title = .y)),
-    thin_data_plot = map2(thin_data, fragment_ID, ~ ggplot(.x, aes(x = Time, y = Value)) + 
-                            facet_wrap(~ as.numeric(Light_Value), scales = "free") +
-                            geom_point() +
-                            labs(title = .y)))
-
-# Example of plots
-cowplot::plot_grid(df$data_plot[[1]], df$thin_data_plot[[1]], nrow = 2,
-                   labels = c("Example plot: all data", "Example plot: thinned data"))
-```
-
-#### The full or thinned data plot for any sample can be accessed like this:
-```
-df %>%
-  filter(fragment_ID == "ACR1_1") %>%
-  pull(thin_data_plot)
-```
-
-# Fit regressions to each interval for each sample
-```{r}
-# Define function for fitting LoLinR regressions to be applied to all intervals for all samples
-fit_reg <- function(df) {
-  rankLocReg(xall = as.numeric(df$Time), yall = df$Value, 
-             alpha = 0.2, method = "pc", verbose = FALSE)
-}
-
-# Setup for parallel processing
-future::plan(multicore)
-
-# Map LoLinR function onto all intervals of each sample's thinned dataset
-df <- df %>%
-  mutate(regs = furrr::future_map(thin_data, function(.) {       # future_map executes function in parallel
-    group_by(., Light_Value) %>%
-    do(rankLcRg = fit_reg(.))
-  }))
-
-## Now 'regs' contains the fitted local regressions for each interval of each sample's thinned dataset
-
-# Define function to pull out and plot regression diagnostics
-plot_rankLcRg <- function(fragment_ID, interval_number) {
-  df %>%
-    filter(fragment_ID == fragment_ID) %>%
-    pluck("regs", 1, "rankLcRg", interval_number) %>%
-    plot()
-}
-```
-
-#### The diagnostics for any regression can be plotted like this, specifying a fragment_ID and the number of the light curve interval:
-#```
-#plot_rankLcRg("BLK032-38", 1)
-#```
-
-### Extract slope of best regression for each interval for each sample
-```{r}
-df.out <- df %>% 
-  unnest(regs) %>%
-  mutate(micromol.L.s = map_dbl(rankLcRg, ~ pluck(., "allRegs", "b1", 1)))
-```
-
-# Adjust by chamber volume and normalize to surface area
-```{r}
-### Merge rates with sample info
-pr <- left_join(
-  select(df.out, fragment_ID, Light_Value, micromol.L.s),
-  distinct(metadata, fragment_ID, Treatment, Run, Chamber.Vol.L, Date)
-)
-
-### Correct for chamber volume and blanks
-pr <- pr %>%
-  mutate(micromol.s = micromol.L.s * Chamber.Vol.L)
-
-# Get blank values -- average for each run and light value in case multiple blanks
-blanks <- pr %>%
-  filter(grepl("BLK", fragment_ID)) %>%
-  group_by(Run, Light_Value) %>%
-  summarise(micromol.s.blank = mean(micromol.s))
-
-# Join blank values with rest of data and subtract values from samples for same run and light value
-pr <- left_join(pr, blanks) %>%
-  mutate(micromol.s.adj = micromol.s - micromol.s.blank) %>%
-  # After correcting for blank values, remove blanks from data
-  filter(!grepl("BLK", fragment_ID))
-
-
-# Import surface area data
-sa <- read_csv(file = "data/Dec_TPC_surface.area.calc.csv")
-
-# Join surface area with rest of data
-pr <- left_join(pr, select(sa, fragment_ID, surface.area.cm2))
-
-# Normalize rates by surface area
-pr <- pr %>%
-  mutate(micromol.cm2.s = micromol.s.adj / surface.area.cm2,
-         micromol.cm2.h = micromol.cm2.s * 3600)
-
-Photo <- pr %>%
-  filter(Light_Value ==620)%>% 
-  separate(fragment_ID, c("Species","Number","Temp.Cat"), sep = "-")
-
-Resp <- pr %>%
-  filter(Light_Value ==0)%>% 
-  separate(fragment_ID, c("Species","Number","Temp.Cat"), sep = "-")
-
-# Import morphology data
-morph<- read_csv(file = "data/morphology.csv")
-morph$Number <- as.character(morph$Number)
-
-# Join morph with rest of data
-Photo <- left_join(Photo, morph, by="Number")
-Resp <- left_join(Resp, morph, by="Number")
-
-Photo <- na.omit(Photo) %>% select("fragment_ID...1", micromol.cm2.h, mtORF, Temp.Cat)
-colnames(Photo)[1] <- "fragment_ID"
-Photo$Timepoint <- "Dec"
-Photo$measure <- "Photo"
-Resp <- na.omit(Resp) %>% select("fragment_ID...1", micromol.cm2.h, mtORF, Temp.Cat)
-colnames(Resp)[1] <- "fragment_ID"
-Resp$Timepoint <- "Dec"
-Resp$measure <- "Resp"
-
-write.csv(Photo, file="data/Dec_Photo_Rawextracted_rates.csv")
-write.csv(Resp, file="data/Dec_Resp_Rawextracted_rates.csv")
-```
-
-
-```{r}
-# Visualize data
-pdf("output/Dec_Raw_Resp_TPC.pdf", width=6, height=6)
-r_plot<-Resp %>%
-    ggplot(., aes(x = Temp.Cat, y = -micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(0,3)+
-    theme_classic() + 
-    theme(axis.title=element_text(face="bold", size=16),
-      axis.text=element_text(size=12, color="black"), 
-      legend.title=element_text(face="bold", size=14), 
-      legend.text=element_text(size=12)); r_plot
-dev.off()
-
-pdf("output/Dec_Raw_Photo_TPC.pdf", width=6, height=6)
-p_plot<-Photo %>%
-    ggplot(., aes(x = Temp.Cat, y = micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(-0.5,2)+
-    theme_classic() + 
-    theme(axis.title=element_text(face="bold", size=16),
-      axis.text=element_text(size=12, color="black"), 
-      legend.title=element_text(face="bold", size=14), 
-      legend.text=element_text(size=12)); p_plot
-dev.off()
-```

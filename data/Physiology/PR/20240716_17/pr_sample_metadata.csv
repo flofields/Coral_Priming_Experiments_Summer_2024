@@ -17,7 +17,7 @@ Date,fragment_ID,Species,box,Chamber.Channel,Channel,Bin,Run,Temp.Cat,Tank,Treat
 20240716,MD-2-5,Madracis decactis,1,4,4,1,2,27,5,Control,0.6,
 20240716,DL-2-26,Diploria labyrinthiformis,2,5,1,1,2,27,5,Control,0.6,
 20240716,MD-4-20,Madracis decactis,2,6,2,1,2,27,5,Control,0.6,
-20240716,BLANK,BLANK,2,7,3,2,2,27,5,Control,0.6,
+20240716,BLANK-2,BLANK,2,7,3,2,2,27,5,Control,0.6,
 20240716,MD-1-9,Madracis decactis,2,8,4,2,2,27,5,Control,0.6,
 20240716,DL-2-11,Diploria labyrinthiformis,3,9,1,2,2,27,5,Control,0.6,
 20240716,DL-4-4,Diploria labyrinthiformis,3,10,2,2,2,27,5,Control,0.6,
