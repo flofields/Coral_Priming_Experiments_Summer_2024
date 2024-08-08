@@ -219,8 +219,8 @@ Resp <- na.omit(Resp) %>% select("fragment_ID", micromol.cm2.h, Treatment, Genot
 Resp$Timepoint <- "TP1"
 Resp$measure <- "Resp"
 
-write.csv(Photo, file="data/Photo_Rawextracted_rates.csv")
-write.csv(Resp, file="data/Resp_Rawextracted_rates.csv")
+write.csv(Photo, file="data/Photo_Rawextracted_rates_TP1.csv")
+write.csv(Resp, file="data/Resp_Rawextracted_rates_TP1.csv")
 ```
 
 
@@ -236,7 +236,7 @@ df_mean_Resp <- Resp %>%
 
 
 # Visualize data
-pdf("output/Raw_Resp.pdf", width=6, height=6)
+pdf("output/Raw_Resp_TP1.pdf", width=6, height=6)
 r_plot<-df_summary_Resp %>%
     ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
     geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
@@ -264,7 +264,7 @@ df_mean_Photo <- Photo %>%
 
 
 # Visualize data
-pdf("output/Raw_Photo.pdf", width=6, height=6)
+pdf("output/Raw_Photo_TP1.pdf", width=6, height=6)
 r_plot<-df_summary_Photo %>%
     ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
     geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
