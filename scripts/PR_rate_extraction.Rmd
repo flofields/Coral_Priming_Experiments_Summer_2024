@@ -283,10 +283,17 @@ r_plot<-df_summary_Photo %>%
 dev.off()
 ```
 
+
+
+
+
+
+
+
 # Timepoint 2 - 22 July 2024 23 July 2024
 ## Import data
 ```{r, warning = FALSE}
-path.p <- "data/Physiology/PR/20240722_23" #the location of all your respirometry files 
+path.p <- "data/Physiology/PR/20240722_23/checked" #the location of all your respirometry files 
 
 # List data files
 file.names <- list.files(path = path.p, pattern = "csv$")  # list all csv file names in the folder
@@ -486,7 +493,7 @@ r_plot<-df_summary_Resp %>%
     scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
     scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    #ylim(0,3)+
+    ylim(0,1.0)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -514,7 +521,7 @@ r_plot<-df_summary_Photo %>%
     scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
     scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    #ylim(0,3)+
+    ylim(0,1.5)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -522,4 +529,75 @@ r_plot<-df_summary_Photo %>%
       legend.text=element_text(size=12)); r_plot
 dev.off()
 ```
+Photosynthesis
+```{r}
+Pho.TP1 <- read.csv("data/Photo_Rawextracted_rates_TP1.csv")
+Pho.TP2 <- read.csv("data/Photo_Rawextracted_rates_TP2.csv")
 
+Pho <- rbind(Pho.TP1,Pho.TP2)
+Pho$Genotype <- as.factor(Pho$Genotype)
+
+df_summary_Pho <- Pho %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Pho <- Pho %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+# Visualize data
+pdf("output/All_Photo.pdf", width=6, height=6)
+r_plot<-df_summary_Pho %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Pho, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.5)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+dev.off()
+  
+```
+Respiration
+```{r}
+Res.TP1 <- read.csv("data/Resp_Rawextracted_rates_TP1.csv")
+Res.TP2 <- read.csv("data/Resp_Rawextracted_rates_TP2.csv")
+
+Res <- rbind(Res.TP1,Res.TP2)
+Res$Genotype <- as.factor(Res$Genotype)
+
+df_summary_Res <- Res %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Res <- Res %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+# Visualize data
+pdf("output/All_Respo.pdf", width=6, height=6)
+r_plot<-df_summary_Res %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Res, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.0)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+dev.off()
+  
+```
