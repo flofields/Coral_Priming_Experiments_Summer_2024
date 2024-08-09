@@ -44,10 +44,10 @@ library(future)
 library(furrr)
 ```
 
-May 2022 Data
+# Timepoint 1 - 16 July 2024 17 July 2024
 ## Import data
 ```{r, warning = FALSE}
-path.p <- "data/Physiology/PR/20240716_17" #the location of all your respirometry files 
+path.p <- "data/Physiology/PR/20240716_17/checked" #the location of all your respirometry files 
 
 # List data files
 file.names <- list.files(path = path.p, pattern = "csv$")  # list all csv file names in the folder
@@ -157,10 +157,6 @@ plot_rankLcRg <- function(fragment_ID, interval_number) {
 }
 ```
 
-#### The diagnostics for any regression can be plotted like this, specifying a fragment_ID and the number of the light curve interval:
-#```
-#plot_rankLcRg("BLK032-38", 1)
-#```
 
 ### Extract slope of best regression for each interval for each sample
 ```{r}
@@ -223,23 +219,34 @@ Resp <- na.omit(Resp) %>% select("fragment_ID", micromol.cm2.h, Treatment, Genot
 Resp$Timepoint <- "TP1"
 Resp$measure <- "Resp"
 
-write.csv(Photo, file="data/Photo_Rawextracted_rates.csv")
-write.csv(Resp, file="data/Resp_Rawextracted_rates.csv")
+write.csv(Photo, file="data/Photo_Rawextracted_rates_TP1.csv")
+write.csv(Resp, file="data/Resp_Rawextracted_rates_TP1.csv")
 ```
 
 
 ```{r}
+
+df_summary_Resp <- Resp %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Resp <- Resp %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
 # Visualize data
-pdf("output/Raw_Resp.pdf", width=6, height=6)
-r_plot<-Resp %>%
-    ggplot(., aes(x = Timepoint, y = -micromol.cm2.h, colour=Treatment)) +
-    geom_point(aes(fill=Genotype, group=Genotype), pch = 21, size=2, alpha=0.3) + 
+pdf("output/Raw_Resp_TP1.pdf", width=6, height=6)
+r_plot<-df_summary_Resp %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Resp, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
     xlab("Timepoint") +
-    facet_wrap(vars(Species), scales = "free")+
-    #scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    #scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(0,3)+
+    #ylim(0,3)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -247,39 +254,57 @@ r_plot<-Resp %>%
       legend.text=element_text(size=12)); r_plot
 dev.off()
 
-pdf("output/Raw_Photo.pdf", width=6, height=6)
-p_plot<-Photo %>%
-    ggplot(., aes(x = Temp.Cat, y = micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+df_summary_Photo <- Photo %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Photo <- Photo %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("output/Raw_Photo_TP1.pdf", width=6, height=6)
+r_plot<-df_summary_Photo %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Photo, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(-0.5,2)+
+    #ylim(0,3)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
       legend.title=element_text(face="bold", size=14), 
-      legend.text=element_text(size=12)); p_plot
+      legend.text=element_text(size=12)); r_plot
 dev.off()
 ```
 
 
 
-December 2022 Data
+
+
+
+
+
+# Timepoint 2 - 22 July 2024 23 July 2024
 ## Import data
 ```{r, warning = FALSE}
-path.p <- "data/PR/Dec_TPC" #the location of all your respirometry files 
+path.p <- "data/Physiology/PR/20240722_23/checked" #the location of all your respirometry files 
 
 # List data files
 file.names <- list.files(path = path.p, pattern = "csv$")  # list all csv file names in the folder
 file.names <- file.names[!grepl("metadata", file.names)]   # omit metadata from files to be read in as data
 
 # Load PI curve sample metadata (i.e., which corals were in which runs)
-sample.info <- read_csv(file = "data/PR/Dec_TPC/Dec_PR_sample_metadata.csv")
+sample.info <- read_csv(file = "data/Physiology/PR/20240722_23/pr_sample_metadata.csv")
 
 # Load PI curve run metadata (i.e., light levels and interval times for each run)
-run.info <- read_csv(file = "data/PR/Dec_TPC/Dec_PR_run_metadata.csv")
+run.info <- read_csv(file = "data/Physiology/PR/20240722_23/pr_run_metadata.csv")
+
 
 # Join all coral and run metadata
 metadata <- full_join(sample.info, run.info) %>%
@@ -287,7 +312,7 @@ metadata <- full_join(sample.info, run.info) %>%
 
 # Select only certain columnns
 metadata <- metadata %>%
-  select(fragment_ID, Run, Treatment, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Value, Temp.Cat)
+  select(fragment_ID, Run, Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Value, Temp.Cat)
 
 # Read in all data files
 #edit fragment_ID name to remove .csv and change _TP1 to _1
@@ -379,10 +404,6 @@ plot_rankLcRg <- function(fragment_ID, interval_number) {
 }
 ```
 
-#### The diagnostics for any regression can be plotted like this, specifying a fragment_ID and the number of the light curve interval:
-#```
-#plot_rankLcRg("BLK032-38", 1)
-#```
 
 ### Extract slope of best regression for each interval for each sample
 ```{r}
@@ -405,7 +426,7 @@ pr <- pr %>%
 
 # Get blank values -- average for each run and light value in case multiple blanks
 blanks <- pr %>%
-  filter(grepl("BLK", fragment_ID)) %>%
+  filter(grepl("BLANK", fragment_ID)) %>%
   group_by(Run, Light_Value) %>%
   summarise(micromol.s.blank = mean(micromol.s))
 
@@ -417,7 +438,7 @@ pr <- left_join(pr, blanks) %>%
 
 
 # Import surface area data
-sa <- read_csv(file = "data/Dec_TPC_surface.area.calc.csv")
+sa <- read_csv(file = "data/Physiology/Surface_Area/SurfaceArea.csv")
 
 # Join surface area with rest of data
 pr <- left_join(pr, select(sa, fragment_ID, surface.area.cm2))
@@ -428,46 +449,51 @@ pr <- pr %>%
          micromol.cm2.h = micromol.cm2.s * 3600)
 
 Photo <- pr %>%
-  filter(Light_Value ==620)%>% 
-  separate(fragment_ID, c("Species","Number","Temp.Cat"), sep = "-")
+  filter(Light_Value ==331)%>% 
+  separate(fragment_ID, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
 
 Resp <- pr %>%
   filter(Light_Value ==0)%>% 
-  separate(fragment_ID, c("Species","Number","Temp.Cat"), sep = "-")
+  separate(fragment_ID, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
 
-# Import morphology data
-morph<- read_csv(file = "data/morphology.csv")
-morph$Number <- as.character(morph$Number)
 
-# Join morph with rest of data
-Photo <- left_join(Photo, morph, by="Number")
-Resp <- left_join(Resp, morph, by="Number")
-
-Photo <- na.omit(Photo) %>% select("fragment_ID...1", micromol.cm2.h, mtORF, Temp.Cat)
-colnames(Photo)[1] <- "fragment_ID"
-Photo$Timepoint <- "Dec"
+Photo <- na.omit(Photo) %>% select("fragment_ID", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Photo)[1] <- "fragment_ID"
+Photo$Timepoint <- "TP2"
 Photo$measure <- "Photo"
-Resp <- na.omit(Resp) %>% select("fragment_ID...1", micromol.cm2.h, mtORF, Temp.Cat)
-colnames(Resp)[1] <- "fragment_ID"
-Resp$Timepoint <- "Dec"
+Resp <- na.omit(Resp) %>% select("fragment_ID", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Resp)[1] <- "fragment_ID"
+Resp$Timepoint <- "TP2"
 Resp$measure <- "Resp"
 
-write.csv(Photo, file="data/Dec_Photo_Rawextracted_rates.csv")
-write.csv(Resp, file="data/Dec_Resp_Rawextracted_rates.csv")
+write.csv(Photo, file="data/Photo_Rawextracted_rates_TP2.csv")
+write.csv(Resp, file="data/Resp_Rawextracted_rates_TP2.csv")
 ```
 
 
 ```{r}
+
+df_summary_Resp <- Resp %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Resp <- Resp %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
 # Visualize data
-pdf("output/Dec_Raw_Resp_TPC.pdf", width=6, height=6)
-r_plot<-Resp %>%
-    ggplot(., aes(x = Temp.Cat, y = -micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+pdf("output/Raw_Resp_TP2.pdf", width=6, height=6)
+r_plot<-df_summary_Resp %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Resp, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(0,3)+
+    ylim(0,1.0)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -475,19 +501,103 @@ r_plot<-Resp %>%
       legend.text=element_text(size=12)); r_plot
 dev.off()
 
-pdf("output/Dec_Raw_Photo_TPC.pdf", width=6, height=6)
-p_plot<-Photo %>%
-    ggplot(., aes(x = Temp.Cat, y = micromol.cm2.h, colour=mtORF)) +
-    geom_point(aes(fill=mtORF, group=fragment_ID), pch = 21, size=2, alpha=0.3) + 
-    xlab("Temperature") + 
-    scale_fill_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
-    scale_color_manual(name="mtORF", values=c("orange","black","cyan", "blue", "green"))+
+df_summary_Photo <- Photo %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Photo <- Photo %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("output/Raw_Photo_TP2.pdf", width=6, height=6)
+r_plot<-df_summary_Photo %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Photo, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    ylim(-0.5,2)+
+    ylim(0,1.5)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
       legend.title=element_text(face="bold", size=14), 
-      legend.text=element_text(size=12)); p_plot
+      legend.text=element_text(size=12)); r_plot
 dev.off()
+```
+Photosynthesis
+```{r}
+Pho.TP1 <- read.csv("data/Photo_Rawextracted_rates_TP1.csv")
+Pho.TP2 <- read.csv("data/Photo_Rawextracted_rates_TP2.csv")
+
+Pho <- rbind(Pho.TP1,Pho.TP2)
+Pho$Genotype <- as.factor(Pho$Genotype)
+
+df_summary_Pho <- Pho %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Pho <- Pho %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+# Visualize data
+pdf("output/All_Photo.pdf", width=6, height=6)
+r_plot<-df_summary_Pho %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Pho, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.5)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+dev.off()
+  
+```
+Respiration
+```{r}
+Res.TP1 <- read.csv("data/Resp_Rawextracted_rates_TP1.csv")
+Res.TP2 <- read.csv("data/Resp_Rawextracted_rates_TP2.csv")
+
+Res <- rbind(Res.TP1,Res.TP2)
+Res$Genotype <- as.factor(Res$Genotype)
+
+df_summary_Res <- Res %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Res <- Res %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+# Visualize data
+pdf("output/All_Respo.pdf", width=6, height=6)
+r_plot<-df_summary_Res %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Res, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.0)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+dev.off()
+  
 ```
