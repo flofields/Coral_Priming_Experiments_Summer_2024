@@ -841,20 +841,20 @@ r_plot<-df_summary_Photo %>%
 dev.off()
 ```
 
-# Timepoint 3 - 05 August 2024 06 August 2024
+# Timepoint 3 - 10 August 2024 11 August 2024
 ## Import data
 ```{r, warning = FALSE}
-path.p <- "data/Physiology/PR/20240805_06/checked" #the location of all your respirometry files 
+path.p <- "data/Physiology/PR/20240810_11/checked" #the location of all your respirometry files 
 
 # List data files
 file.names <- list.files(path = path.p, pattern = "csv$")  # list all csv file names in the folder
 file.names <- file.names[!grepl("metadata", file.names)]   # omit metadata from files to be read in as data
 
 # Load PI curve sample metadata (i.e., which corals were in which runs)
-sample.info <- read_csv(file = "data/Physiology/PR/20240805_06/pr_sample_metadata.csv")
+sample.info <- read_csv(file = "data/Physiology/PR/20240810_11/pr_sample_metadata.csv")
 
 # Load PI curve run metadata (i.e., light levels and interval times for each run)
-run.info <- read_csv(file = "data/Physiology/PR/20240805_06/pr_run_metadata.csv")
+run.info <- read_csv(file = "data/Physiology/PR/20240810_11/pr_run_metadata.csv")
 
 
 # Join all coral and run metadata
@@ -863,7 +863,7 @@ metadata <- full_join(sample.info, run.info) %>%
 
 # Select only certain columns
 metadata <- metadata %>%
-  select(fragment_ID, Run, Priming.Treatment,	Secondary.Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Value, Temp.Cat)
+  select(fragment_ID, Run, Priming.Treatment,	Secondary.Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Value)
 
 # Read in all data files
 #edit fragment_ID name to remove .csv and change _TP1 to _1
@@ -1010,15 +1010,15 @@ Resp <- pr %>%
 
 Photo <- na.omit(Photo) %>% select("fragment_ID", micromol.cm2.h, Priming.Treatment,	Secondary.Treatment, Genotype, Species)
 #colnames(Photo)[1] <- "fragment_ID"
-Photo$Timepoint <- "TP3"
+Photo$Timepoint <- "TP4"
 Photo$measure <- "Photo"
 Resp <- na.omit(Resp) %>% select("fragment_ID", micromol.cm2.h, Priming.Treatment,	Secondary.Treatment, Genotype, Species)
 #colnames(Resp)[1] <- "fragment_ID"
-Resp$Timepoint <- "TP3"
+Resp$Timepoint <- "TP4"
 Resp$measure <- "Resp"
 
-write.csv(Photo, file="data/Photo_Rawextracted_rates_TP3.csv")
-write.csv(Resp, file="data/Resp_Rawextracted_rates_TP3.csv")
+write.csv(Photo, file="data/Photo_Rawextracted_rates_TP4.csv")
+write.csv(Resp, file="data/Resp_Rawextracted_rates_TP4.csv")
 ```
 
 
@@ -1034,7 +1034,7 @@ df_mean_Resp <- Resp %>%
 
 
 # Visualize data
-pdf("output/Raw_Resp_TP3.pdf", width=6, height=6)
+pdf("output/Raw_Resp_TP4.pdf", width=6, height=6)
 r_plot<-df_summary_Resp %>%
     ggplot(., aes(x = Priming.Treatment, y = -mean_micromol_cm2_h, colour=Secondary.Treatment)) +
     geom_point(aes(fill=Secondary.Treatment, group=Genotype, shape=Genotype), size=2) + 
@@ -1062,7 +1062,7 @@ df_mean_Photo <- Photo %>%
 
 
 # Visualize data
-pdf("output/Raw_Photo_TP3.pdf", width=6, height=6)
+pdf("output/Raw_Photo_TP4.pdf", width=6, height=6)
 r_plot<-df_summary_Photo %>%
     ggplot(., aes(x = Priming.Treatment, y = mean_micromol_cm2_h, colour=Secondary.Treatment)) +
     geom_point(aes(fill=Secondary.Treatment, group=Genotype, shape=Genotype), size=2) + 
