@@ -1044,7 +1044,7 @@ r_plot<-df_summary_Resp %>%
     #scale_fill_manual(name="Primary Treatment", values=c("gray","red","blue"))+
     scale_color_manual(name="Secondary Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    #ylim(0,1.0)+
+    ylim(0,1.0)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
@@ -1072,7 +1072,7 @@ r_plot<-df_summary_Photo %>%
     #scale_fill_manual(name="Primary Treatment", values=c("gray","red","blue"))+
     scale_color_manual(name="Secondary Treatment", values=c("gray","red","blue"))+
     ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
-    #ylim(0,1.5)+
+    ylim(0,1.5)+
     theme_classic() + 
     theme(axis.title=element_text(face="bold", size=16),
       axis.text=element_text(size=12, color="black"), 
