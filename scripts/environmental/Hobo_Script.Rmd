@@ -1,0 +1,154 @@
+---
+title: "Hobo data"
+author: "Florence Fields"
+date: "2024-10-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#Load libraries 
+
+library(dplyr)
+library(purrr)
+library(readr)
+library(ggplot2)
+
+```
+
+
+```{r setup, include=FALSE}
+file_list <- list.files(path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240808", pattern = "*.csv", full.names = TRUE)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r setup, echo=FALSE}
+# Read all CSV files into a list of data frames and remove specific rows
+tank5<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank5.csv")
+tank4<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank4.csv")
+tank6<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank6.csv")
+tank7<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank7.csv")
+tank3<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank3.csv")
+
+#Removing the first coloumn, we don't need it
+
+
+tank4<- tank4[-c(1)]
+tank6<- tank6[-c(1)]
+tank7<- tank7[-c(1)]
+tank5<- tank5[-c(1)]
+tank3<- tank3[-c(1)]
+
+#Renaming the colounms 
+tank4 <-tank4 %>% rename(Date.time = X)
+tank4 <-tank4 %>% rename(Temperature = X.1)
+
+tank6 <-tank6 %>% rename(Date.time = X)
+tank6 <-tank6 %>% rename(Temperature = X.1)
+
+tank5 <-tank5 %>% rename(Date.time = X)
+tank5 <-tank5 %>% rename(Temperature = X.1)
+
+tank7 <-tank7 %>% rename(Date.time = X)
+tank7 <-tank7 %>% rename(Temperature = X.1)
+
+tank3 <-tank3 %>% rename(Date.time = X)
+tank3 <-tank3 %>% rename(Temperature = X.1)
+
+#Removing unwanted row
+tank4<- tank4[-c(1),]
+tank6<- tank6[-c(1),]
+tank7<- tank7[-c(1),]
+tank5<- tank5[-c(1),]
+tank3<- tank3[-c(1),]
+
+
+#Assigning tank numbers to each file
+tank4 <- tank4 %>%
+  mutate(tank = rep("tank4", 1991))
+tank6 <- tank6 %>%
+  mutate(tank = rep("tank6", 2017))
+tank7 <- tank7 %>%
+  mutate(tank = rep("tank7", 2002))
+tank5 <- tank5 %>%
+  mutate(tank = rep("tank5", 1990))
+tank3 <- tank3 %>%
+  mutate(tank = rep("tank3", 1651))
+
+
+# Combine all data frames into one
+tank_list<- list(tank4,tank5,tank6,tank7,tank3)
+
+tank_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), tank_list)
+#tank_merge<- tank_merge[-c(4:7)]
+head(tank_merge)
+
+write.csv(tank_merge, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240815TempHobo.csv")
+
+```
+
+#Merging all hobo data and plotting it
+
+```{r}
+df1 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240724TempHobo.csv")
+
+df2 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240808TempHobo.csv")
+
+df3 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240815TempHobo.csv")
+df1<- df1[-c(1)]
+df2<- df2[-c(1)]
+df3<- df3[-c(1)]
+
+```
+
+```{r}
+#Individual date collection Hobo plots 
+
+ggplot(df1, aes(Date.time, Temperature, color= "tank"))+
+  geom_line()
+
+
+ggplot(df1, aes(x = Date.time, y=Temperature, color= tank)) +
+  geom_point() +
+  facet_wrap(~ tank, scales = "free_y") +
+  labs(x = "Time", y = "Temperature °C") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=-40),legend.position = "top", 
+        legend.text = element_text(size = 7),
+                                   legend.title = element_text(size = 8))+
+  scale_color_manual(values = c("red", "blue", "black", "purple"))
+
+###Maybe separate just take the avg of the day and plot that 
+  
+```
+
+
+# List of data frames to merge
+df_list <- list(df1, df2, df3)
+
+# Merge all data frames in the list by "Date.time"
+df_merge <- Reduce(function(x, y) merge(x, y, by = "Date.time"), df_list)
+
+# View the merged data frame
+print(df_mergee)
+
+
+
+ggplot(df_mergee, aes(x = Date.time, y = Temperature)) +
+  geom_point(aes(color = tank),size=.5) +
+  facet_wrap(~ tank, scales = "free_y") +
+  labs(x = "Time", y = "Temperature") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = -40), 
+        legend.position = "top", 
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 8)) +
+  scale_color_manual(values = c("red", "blue", "green", "purple", "orange"))
+
+  ggsave(path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo", filename = "FinalHobotemp.pdf")
+#This isn't working, need to fix this 
+```
+

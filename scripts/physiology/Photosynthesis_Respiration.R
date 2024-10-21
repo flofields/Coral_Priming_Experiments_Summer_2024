@@ -1,7 +1,10 @@
-##Photosynthesis and Respiration code October 2019
-##created by Danielle Becker 03/02/20
-##edited by Danielle Becker 04/02/20
-
+---
+title: "Photosynthesis and respiration rate calculations"
+author: "Danielle Becker"
+edited by: "Florence Fields"
+date: "20240616"
+output: html_document
+---
 #clear lists
 rm(list=ls())
 

@@ -122,6 +122,7 @@ ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg, color = Treatment)) +
   facet_wrap(~Colony)
   #geom_boxplot(aes(color = Treatment)) +
   #geom_violin()
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_colony.pdf")
 ```
 Do stats on Fv/Fm by treatment, species and colony 
 ```{r}
@@ -147,6 +148,7 @@ ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg)) +
   theme_bw()
   #geom_boxplot(aes(color = Treatment)) +
   #geom_violin()
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_species.pdf")
 ```
 
 Do stats on Fv/Fm by treatment and colony 

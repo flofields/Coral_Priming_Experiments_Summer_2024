@@ -5,15 +5,16 @@ date: "2024-06-12"
 output: html_document
 ---
 
-This script reads and plots environmental data from daily measurements. This script was created by Jill Ashey and altered to suit this data and experiment purposes.  
+This script reads and plots environmental data from daily measurements. This script was created by Jill Ashey and altered to suit this data and experiment purposes.
 
-## Set up 
+## Set up
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 Load packages
+
 ```{r}
 library(tidyverse)
 library(stringr)
@@ -26,10 +27,10 @@ library(broom)
 library(cowplot)
 ```
 
-Read in daily measurements file.  
+Read in daily measurements file.
 
 ```{r}
-daily<-read_csv("data/enviromental/daily_measurements.csv")
+daily<-read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/daily_measurements.csv")
 daily$date<-as.Date(daily$date, format="%m/%d/%y")
 daily$tris.date<-as.character(daily$tris.date)
 
@@ -38,44 +39,76 @@ daily <- daily %>%
   drop_na(temp.C)
 ```
 
-## Calculate total pH  
+## Combine tris cal datasets
 
-Calculate the calibration curve from the Tris calibration and calculate pH on the total scale from pH.mV.   
-```{r}
-pHcalib<-read_csv("data/enviromental/Tris_Calibration.csv")
-pHcalib$tris.date<-as.character(pHcalib$tris.date)
+```{r setup, echo=FALSE}
+tris1<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240619.csv")
+tris2<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240626.csv")
+tris3<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240701.csv")
+tris4<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240704.csv")
+tris5<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240707.csv")
+tris6<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240710.csv")
+tris7<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240715.csv")
+tris8<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240718.csv")
+tris9<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240724.csv")
+tris10<- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/Tris/20240807.csv")
 
-pHSlope<-pHcalib %>%
-  nest_by(tris.date)%>%
-  mutate(fitpH = list(lm(mVTris~Ttris, data = pHcalib))) %>% # linear regression of mV and temp of the tris
-  reframe(broom::tidy(fitpH)) %>% # make the output tidy
-  dplyr::select(tris.date, term, estimate) %>%
-  pivot_wider(names_from = term, values_from = estimate) %>%# put slope and intercept in their own column
-  left_join(daily, ., by="tris.date") %>% # join with the pH sample data
-  mutate(mVTris = temp.C*Ttris + `(Intercept)`) %>%# calculate the mV of the tris at temperature in which the pH of the tanks were measured
-  mutate(pH.total = seacarb::pH(Ex=ph.mV, Etris=mVTris, S=sal.psu, T=temp.C)) # calculate pH of the tanks using the pH seacarb function
+tris_6<-tris6[-c(1:3), ]
+tris_list<- list(tris1,tris2,tris3,tris4,tris5,tris_6,tris7,tris8,tris9,tris10)
+
+tris_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), tris_list)
+
+write.csv(tris_merge, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/TrisCal/Tris_Calibration.csv")
 ```
 
-pH is now calculated as Total pH in the "pH" column. Now select the desired columns to analyze further.  
+## Calculate total pH
+
+Calculate the calibration curve from the Tris calibration and calculate pH on the total scale from pH.mV.
+
+```{r}
+pHcalib<-read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/TrisCal/Tris_Calibration.csv")
+pHcalib$Tris.date<-as.character(pHcalib$Tris.date)
+
+#Changing the name of coloumn 11 in the daily dataset from tris.date to Tris.date
+colnames(daily)[colnames(daily) == 'tris.date'] <- 'Tris.date'
+
+
+pHSlope <- pHcalib %>%
+  nest_by(Tris.date) %>%
+  mutate(fitpH = list(lm(mVTris ~ Ttris, data = pHcalib))) %>% # linear regression of mV and temp of the tris
+  reframe(broom::tidy(fitpH)) %>% # make the output tidy
+  dplyr::select(Tris.date, term, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>% # put slope and intercept in their own column
+  mutate(Tris.date = as.character(Tris.date)) %>% # convert Tris.date to character
+  left_join(daily %>% mutate(Tris.date = as.character(Tris.date)), by = "Tris.date") %>% # join with the pH sample data
+  mutate(mVTris = temp.C * Ttris + `(Intercept)`) %>% # calculate the mV of the tris at temperature in which the pH of the tanks were measured
+  mutate(pH.total = seacarb::pH(Ex = pH.mV, Etris = mVTris, S = sal.psu, T = temp.C)) # calculate pH of the tanks using the pH seacarb function
+
+```
+
+pH is now calculated as Total pH in the "pH" column. Now select the desired columns to analyze further.
+
 ```{r}
 daily_calc<-pHSlope%>%
-  dplyr::select(date, time, tank, treatment, temp.C, sal.psu, par, flow.mL5s, ph.nbs, pH.total)
+  dplyr::select(date, time, tank, treatment, temp.C, sal.psu, par.avg, flow.mL10s, pH.nbs, pH.total)
 ```
 
 ## Calculate flow and par
 
-Calculate flow to total mL per minute rather than 5 sec.  
+Calculate flow to total mL per minute rather than 5 sec.
+
 ```{r}
 daily_calc<-daily_calc%>%
-   mutate(flow.L.min=(flow.mL5s*12)/1000)%>%
-   dplyr::select(!flow.mL5s)
+   mutate(flow.L.min=(flow.mL10s*12)/1000)%>%
+   dplyr::select(!flow.mL10s)
 ```
 
 No need to apply the immersion correction factor. The MQ-510 Underwater Quantum Meters already apply the immersion effect correction factor to the meter readings through the meter firmware. [See Documentation Here](https://www.apogeeinstruments.com/underwater-par-measurements/)
 
 ## Change to long format
 
-Change data format to long format 
+Change data format to long format
+
 ```{r}
 daily_calc.long <-daily_calc %>% pivot_longer(cols=temp.C:flow.L.min,
   names_to = "metric",
@@ -84,9 +117,10 @@ daily_calc.long <-daily_calc %>% pivot_longer(cols=temp.C:flow.L.min,
 
 Filter by relevant dates if needed
 
-## Plot metrics of interest  
+## Plot metrics of interest
 
-Plot by date colored by treatment and tank.  (may change script in the fields according to my needs)    
+Plot by date colored by treatment and tank. (may change script in the fields according to my needs)
+
 ```{r}
 ## Treatment
 daily_treatment<-daily_calc.long %>%
@@ -96,7 +130,18 @@ daily_treatment<-daily_calc.long %>%
   facet_wrap(metric ~ ., scales = "free")+
   theme_bw(); daily_treatment
   
-ggsave(filename="output/environmental/treatment_daily_measurements.png", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
+ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/treatment_daily_measurements.pdf", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
+
+
+daily_treatment<-daily_calc.long %>%
+  ggplot(aes(x=date, y=value, colour=treatment))+
+  geom_line(size=.5)+
+  xlab("Date")+
+  facet_wrap(metric ~ ., scales = "free")+
+  theme_bw(); daily_treatment
+  
+ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/treatment_daily_measurements_line_graph.pdf", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
+
 
 ## Tank type
 daily_tank<-daily_calc.long %>%
@@ -106,42 +151,27 @@ daily_tank<-daily_calc.long %>%
   facet_grid(metric ~ ., scales = "free")+
   theme_bw(); daily_tank
   
-ggsave(filename="output/environmental/tank_daily_measurements.png", plot=daily_tank, dpi=300, width=6, height=8, units="in")
+ggsave(filename= "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/tank_daily_measurements_.pdf", plot=daily_tank, dpi=300, width=6, height=8, units="in")
+
 ```
 
-Plot means by tank. (may add acclimation tank so basin 7)     
 ```{r}
-# Plot by basin
-basin_daily_treatment_summary<-daily_calc.long %>%
-  #filter(is.na(Squarical)) %>%
-  filter(Type %in% c("Basin 1", "Basin 2", "Basin 3", "Basin 4", "Basin 5", "Basin 6"))%>%
-  
-  ggplot(aes(x=tank, y=value, colour=treatment))+
-  geom_point()+
-  geom_boxplot()+
-  scale_colour_manual(name="", values=c("blue", "red"))+
-  xlab("Date")+
-  ylab("Value")+
-  facet_wrap(~ metric, scales = "free")+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +  # Rotate text by 45 degrees
-  theme_classic(); basin_daily_treatment_summary
-
-ggsave(filename="output/environmental/basin_summary_daily_measurements.png", plot=basin_daily_treatment_summary, dpi=300, width=9, height=6, units="in")
 
 ```
 
-## Test for differences   
+## Test for differences
 
 Use the daily_calc df created earlier.
 
 Test for differences between treatments.
+
 ```{r}
 daily_calc%>%
   aov(flow.L.min~treatment, data=.)%>%
   summary()
  
 daily_calc%>%
-  aov(par~treatment, data=.)%>%
+  aov(par.avg~treatment, data=.)%>%
   summary()
 
 daily_calc%>%
@@ -149,7 +179,7 @@ daily_calc%>%
   summary()
 
 daily_calc%>%
-  aov(ph.nbs~treatment, data=.)%>%
+  aov(pH.nbs~treatment, data=.)%>%
   summary()
 
 daily_calc%>%
@@ -161,7 +191,8 @@ daily_calc%>%
   summary()
 ```
 
-Test for differences between tanks and treatment 
+Test for differences between tanks and treatment
+
 ```{r}
 daily_calc%>%
   aov(flow.L.min~tank*treatment, data=.)
@@ -175,7 +206,7 @@ daily_calc%>%
   summary()
 
 daily_calc%>%
-  aov(ph.nbs~tank*treatment, data=.)%>%
+  aov(pH.nbs~tank*treatment, data=.)%>%
   summary()
 
 daily_calc%>%
@@ -187,9 +218,10 @@ daily_calc%>%
   summary()
 ```
 
-## Summarize daily measurements  
+## Summarize daily measurements
 
-Calculate descriptive statistics   
+Calculate descriptive statistics
+
 ```{r}
 summary<-daily_calc%>%
   group_by(tank, treatment)%>%
@@ -197,9 +229,5 @@ summary<-daily_calc%>%
   select(!time)%>%
   summarise(across(everything(), list(mean = mean, sd = sd), na.rm = TRUE)); summary
 
-write_csv(summary, "output/environmental/daily_measurements_summary.csv")
+write_csv(summary, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/daily_measurements_summary.csv")
 ```
-
-
-
-

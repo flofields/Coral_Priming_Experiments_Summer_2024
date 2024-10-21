@@ -1,0 +1,127 @@
+---
+title: "Total Alkalinity with Parsing"
+created by: Nyssa Silbiger 03/28/2014 and edited over the years by members of the Putnam Lab
+date: "2024-10-08"
+output: html_document
+---
+
+#This Script, calculates the total alkalinity using potentiometric titrations. Uses a for loop to read in data exported as a titration file and calculate Total alkalinity and at the end it exports your data as a .csv file.
+
+#### Files needed ######
+# 1. pHCalibration.csv in your "Data" folder
+#Inside the Data folder You must have a subfolder for each data set. In each subfolder there is
+# 2. the mass file for your run  
+# 3. a subfolder named "TodaysDate" (where all of your titration files are) directly exported from LabX.
+
+
+
+```{r setup, include=FALSE}
+
+rm(list=ls()) # sweep environment
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Titrator")
+
+
+#NOTE: newer versions of the seacarb package have a hard time recognizing the "at" function. You need to check that the version installed is version 3.2, not version 3.3.1 which is the newest version of the "seacarb"
+
+#packageurl <- "https://cran.r-project.org/src/contrib/Archive/seacarb/seacarb_3.2.tar.gz"
+#install.packages(packageurl, repos=NULL, type="source")
+
+library(seacarb) #used to calculate TA
+library(tidyverse)
+```
+
+
+#THE DATA AND NAME OF FOLDER SHOULD BE CHANGED EACH TIME THE SCRIPT IS USED
+
+```{r setup, echo==FALSE}
+massfile<-"Mass_20241008_Samples.csv" # name of your file with masses
+titrationfile<-'20241008_ENCORE_PRIMING_Samples.csv'# name of the last titration file run
+date<-'20241008' #date that data was run
+path<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Titrator/20241008" #the location of all your titration files, your folder of the day!
+
+```
+
+#LOAD MASS DATA
+
+```{r setup, echo=FALSE}
+#Load Mass Data
+Mass0<-read.csv(file.path(path,massfile), header=T, sep=",", na.string="NA", as.is=T) 
+```
+
+```{r setup, echo=FALSE}
+#Renaming Junk2 to fit into the data set
+Mass0$Sample.ID1[Mass0$Sample.ID1 == "JUNK2"] <- "Junk_1"
+
+# Use separate() to split the 'Name' column into 'FirstName' and 'LastName'
+Mass <- Mass0 %>% separate(Sample.ID1, into = c("DateSampled", "Tank"), sep = "_")
+
+print(Mass)
+```
+
+#### pH Calibration #####
+```{r setup, echo=FALSE}
+
+pHCal<-read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Titrator/pHCalibration.csv") # read in the pH Calibration file
+
+#select the calibration for the correct date
+pHData<-pHCal[pHCal$Date==date,]
+
+#calculate pH 3 and 3.5 based on the slope and intercept from pH 4, 7, and 10 calibration
+mod.pH<-lm(c(pHData$pH4, pHData$pH7, pHData$pH10)~c(4,7,10)) # linear model
+
+
+# print a plot of the relationship between pH and mV
+
+png(paste0(path,"/",Sys.Date(),'pHmvplot.png'), height = 400, width = 400)
+plot(c(4,7,10), c(pHData$pH4, pHData$pH7, pHData$pH10), xlab = 'pH', ylab = 'mv')
+lines(c(4,7,10), predict(mod.pH))
+R2<-summary(mod.pH)$r.squared
+legend('topright', legend = bquote(R^2 == .(format(R2, digits = 3))), bty='n')
+dev.off()
+
+# Select the mV for pH=3 and pH=3.5 based on your probe calibration
+pH35<-mod.pH$coefficients[1]+mod.pH$coefficients[2]*3.5
+pH3<-mod.pH$coefficients[1]+mod.pH$coefficients[2]*3
+```
+
+```{r setup, echo=FALSE}
+##### titration###########
+
+#create an empty matrix to put the TA values in
+
+nrows<-nrow(Mass) #need file length/number of rows
+
+
+TA <- data.frame(matrix(nrow = nrows, ncol = 8)) # changes from 4 columns to 5
+
+rownames(TA)<-Mass$Sample.ID1[1:nrows]
+
+colnames(TA)<-c("Date",'SampleDate',"SampleID",'TA','Mass','Salinity','Tank', 'PrimingTreatment') # added a date and tank column
+# changed Sample.ID1 to SampleID in the TA data frame only
+
+#run a for loop to bring in the titration files one at a time and calculate TA
+# read in the mega concatenated titration results file
+
+filename<-file.path(path,titrationfile)
+
+AllData<-read.csv(filename, sep=",", na.string="NA", as.is=T, skip=4)[ ,1:5]
+
+#Identifies rows starting with scope in column 1 of the titration file
+sample_name_positions <- c(1,grep("^Scope", AllData[,1]), nrow(AllData))
+
+## parse through all the data in the one file ###
+sample_names<-Mass$Sample.ID1
+
+# create a list with all the sample IDs
+sample_names_list <- list()
+for (item in 1:length(sample_names)){
+  sample_names_list[[item]] <- sample_names[item]
+}
+
+# fill the list with the data from each sample
+for (i in 1:nrows){
+  sample_names_list[[i]]<-data.frame(AllData[sample_name_positions[i]:sample_name_positions[i+1],])
+  colnames(sample_names_list[[i]])<-c("Volume","Time","mV","Temperature","dV/dt")
+}
+
+
