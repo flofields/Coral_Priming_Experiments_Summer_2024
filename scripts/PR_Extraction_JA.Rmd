@@ -1,0 +1,11 @@
+---
+title: "Photosynthesis & Respiration JA"
+author: "Jill Ashey"
+date: "2025-01-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
