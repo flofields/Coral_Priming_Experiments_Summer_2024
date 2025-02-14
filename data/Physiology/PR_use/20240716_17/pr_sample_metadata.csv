@@ -1,0 +1,146 @@
+,sample-id,Chamber.Vol.L,Date,Species,box,Chamber.Channel,Channel,Bin,Run,Temp.Cat,Tank,Treatment,Notes
+1,BLANK-1,0.645,20240716,BLANK,3,11,3,2,1,27,4,Control,NA
+2,BLANK-10,0.645,20240717,BLANK,1,2,2,1,10,27,2,pH,NA
+3,BLANK-11,0.645,20240717,BLANK,3,10,10,2,11,27,6,Heat,NA
+4,BLANK-12,0.645,20240717,BLANK,1,1,1,1,12,27,7,Heat,NA
+5,BLANK-2,0.645,20240716,BLANK,2,7,3,2,2,27,5,Control,NA
+6,BLANK-3,0.645,20240716,BLANK,3,10,2,2,3,27,2,pH,NA
+7,BLANK-4,0.645,20240716,BLANK,1,3,3,1,4,27,3,pH,NA
+8,BLANK-5,0.645,20240716,BLANK,1,1,1,1,5,27,6,Heat,NA
+9,BLANK-7,0.645,20240717,BLANK,2,7,3,2,7,27,4,Control,NA
+10,BLANK-8,0.645,20240717,BLANK,1,4,4,1,8,27,5,Control,NA
+11,BLANK-9,0.645,20240717,BLANK,3,12,4,2,9,27,3,pH,NA
+14,DL-1-10,0.636,20240717,Diploria labyrinthiformis,3,11,3,2,8,27,5,Control,NA
+15,DL-1-11,0.633,20240716,Diploria labyrinthiformis,2,8,4,2,6,27,7,Heat,NA
+18,DL-1-14,0.637,20240717,Diploria labyrinthiformis,1,3,3,1,8,27,5,Control,NA
+19,DL-1-15,0.626,20240717,Diploria labyrinthiformis,2,5,5,1,10,27,2,pH,NA
+20,DL-1-16,0.625,20240717,Diploria labyrinthiformis,2,8,8,2,10,27,2,pH,NA
+22,DL-1-18,0.626,20240717,Diploria labyrinthiformis,2,5,5,1,11,27,6,Heat,NA
+23,DL-1-19,0.651,20240717,Diploria labyrinthiformis,2,5,1,1,7,27,4,Control,NA
+25,DL-1-20,0.626,20240717,Diploria labyrinthiformis,2,6,6,1,11,27,6,Heat,NA
+26,DL-1-21,0.634,20240716,Diploria labyrinthiformis,3,11,3,2,3,27,2,pH,NA
+27,DL-1-21b,0.634,20240717,Diploria labyrinthiformis,3,11,3,2,9,27,3,pH,Duplicate in run3
+37,DL-1-4,0.625,20240717,Diploria labyrinthiformis,1,4,4,1,7,27,4,Control,NA
+39,DL-1-6,0.635,20240717,Diploria labyrinthiformis,3,10,2,2,9,27,3,pH,NA
+42,DL-1-9,0.633,20240716,Diploria labyrinthiformis,3,9,1,2,5,27,6,Heat,NA
+44,DL-2-1,0.635,20240717,Diploria labyrinthiformis,2,7,3,2,9,27,3,pH,NA
+45,DL-2-10,0.635,20240716,Diploria labyrinthiformis,2,7,3,2,5,27,6,Heat,NA
+46,DL-2-11,0.63,20240716,Diploria labyrinthiformis,3,9,1,2,2,27,5,Control,NA
+48,DL-2-13,0.607,20240716,Diploria labyrinthiformis,1,4,4,1,5,27,6,Heat,NA
+49,DL-2-13,0.607,20240716,Diploria labyrinthiformis,3,9,1,2,6,27,7,Heat,NA
+50,DL-2-14,0.63,20240716,Diploria labyrinthiformis,1,2,2,1,1,27,4,Control,NA
+51,DL-2-15,0.627,20240716,Diploria labyrinthiformis,2,8,4,2,5,27,6,Heat,NA
+52,DL-2-16,0.633,20240717,Diploria labyrinthiformis,1,3,3,1,10,27,2,pH,NA
+54,DL-2-18,0.635,20240716,Diploria labyrinthiformis,1,3,3,1,1,27,4,Control,NA
+55,DL-2-19,0.635,20240717,Diploria labyrinthiformis,3,12,12,2,10,27,2,pH,NA
+56,DL-2-2,0.625,20240717,Diploria labyrinthiformis,3,12,4,2,7,27,4,Control,NA
+57,DL-2-20,0.635,20240716,Diploria labyrinthiformis,1,4,4,1,4,27,3,pH,NA
+58,DL-2-21,0.63,20240716,Diploria labyrinthiformis,2,5,1,1,4,27,3,pH,NA
+59,DL-2-22,0.635,20240717,Diploria labyrinthiformis,2,8,8,2,12,27,7,Heat,NA
+61,DL-2-24,0.626,20240717,Diploria labyrinthiformis,3,9,9,2,12,27,7,Heat,NA
+63,DL-2-26,0.634,20240716,Diploria labyrinthiformis,2,5,1,1,2,27,5,Control,NA
+65,DL-2-3,0.635,20240716,Diploria labyrinthiformis,3,12,4,2,4,27,3,pH,NA
+67,DL-2-4,0.644,20240717,Diploria labyrinthiformis,1,3,3,1,7,27,4,Control,NA
+70,DL-2-7,0.635,20240716,Diploria labyrinthiformis,3,12,4,2,5,27,6,Heat,NA
+71,DL-2-8,0.636,20240716,Diploria labyrinthiformis,2,7,3,2,3,27,2,pH,NA
+72,DL-2-9,0.635,20240717,Diploria labyrinthiformis,2,5,1,1,8,27,5,Control,NA
+75,DL-3-10,0.638,20240717,Diploria labyrinthiformis,3,10,10,2,12,27,7,Heat,NA
+76,DL-3-11,0.63,20240717,Diploria labyrinthiformis,1,3,3,1,9,27,3,pH,NA
+78,DL-3-13,0.635,20240717,Diploria labyrinthiformis,2,6,6,1,12,27,7,Heat,Duplicate in run6
+79,DL-3-13,0.635,20240716,Diploria labyrinthiformis,1,2,2,1,6,27,7,Heat,NA
+80,DL-3-14,0.63,20240717,Diploria labyrinthiformis,2,7,3,2,8,27,5,Control,NA
+82,DL-3-16,0.634,20240716,Diploria labyrinthiformis,2,6,2,1,3,27,2,pH,NA
+83,DL-3-17,0.631,20240716,Diploria labyrinthiformis,2,6,2,1,4,27,3,pH,NA
+86,DL-3-2,0.634,20240716,Diploria labyrinthiformis,2,6,2,1,6,27,7,Heat,NA
+89,DL-3-22,0.635,20240717,Diploria labyrinthiformis,1,4,4,1,11,27,6,Heat,NA
+91,DL-3-24,0.627,20240717,Diploria labyrinthiformis,3,9,1,2,8,27,5,Control,NA
+92,DL-3-25,0.634,20240717,Diploria labyrinthiformis,3,10,10,2,10,27,2,pH,NA
+93,DL-3-26,0.63,20240717,Diploria labyrinthiformis,2,7,7,2,11,27,6,Heat,NA
+98,DL-3-4,0.635,20240716,Diploria labyrinthiformis,1,1,1,1,1,27,4,Control,NA
+103,DL-3-9,0.644,20240716,Diploria labyrinthiformis,1,2,2,1,3,27,2,pH,NA
+104,DL-4-1,0.61,20240716,Diploria labyrinthiformis,2,8,4,2,1,27,4,Control,NA
+107,DL-4-12,0.626,20240716,Diploria labyrinthiformis,2,8,4,2,4,27,3,pH,NA
+112,DL-4-17b,0.615,20240717,Diploria labyrinthiformis,1,2,2,1,9,27,3,pH,NA
+113,DL-4-17,0.615,20240716,Diploria labyrinthiformis,1,1,1,1,3,27,2,pH,NA
+114,DL-4-18,0.628,20240716,Diploria labyrinthiformis,3,12,4,2,1,27,4,Control,NA
+115,DL-4-19,0.63,20240716,Diploria labyrinthiformis,2,7,3,2,6,27,7,Heat,NA
+116,DL-4-2,0.625,20240717,Diploria labyrinthiformis,3,9,1,2,7,27,4,Control,NA
+119,DL-4-22,0.625,20240716,Diploria labyrinthiformis,3,11,3,2,4,27,3,pH,NA
+120,DL-4-23,0.635,20240716,Diploria labyrinthiformis,1,3,3,1,2,27,5,Control,NA
+124,DL-4-3,0.625,20240716,Diploria labyrinthiformis,1,2,2,1,2,27,5,Control,NA
+127,DL-4-4,0.635,20240716,Diploria labyrinthiformis,3,10,2,2,2,27,5,Control,NA
+128,DL-4-5,0.625,20240717,Diploria labyrinthiformis,3,11,11,2,12,27,7,Heat,NA
+133,DL-5-18,NA,20240716,Diploria labyrinthiformis,2,7,3,2,1,27,4,Control,NA
+137,MD-1-10,0.636,20240717,Madracis decactis,1,4,4,1,9,27,3,pH,NA
+139,MD-1-12,0.636,20240716,Madracis decactis,2,5,1,1,6,27,7,Heat,NA
+140,MD-1-12,0.635,20240716,Madracis decactis,2,5,1,1,6,27,7,Heat,NA
+141,MD-1-13,0.64,20240717,Madracis decactis,3,11,11,2,10,27,2,pH,NA
+142,MD-1-14,0.64,20240717,Madracis decactis,3,12,4,2,8,27,5,Control,NA
+143,MD-1-15,0.637,20240717,Madracis decactis,3,11,11,2,11,27,6,Heat,Duplicate in run5
+144,MD-1-15,0.637,20240716,Madracis decactis,1,3,3,1,5,27,6,Heat,NA
+146,MD-1-17,0.642,20240717,Madracis decactis,1,1,1,1,11,27,6,Heat,NA
+147,MD-1-18,0.636,20240716,Madracis decactis,1,1,1,1,4,27,3,pH,NA
+149,MD-1-2,0.636,20240717,Madracis decactis,2,6,2,1,7,27,4,Control,NA
+151,MD-1-21,0.635,20240717,Madracis decactis,3,12,12,2,11,27,6,Heat,Cant find
+152,MD-1-22,0.64,20240717,Madracis decactis,1,3,3,1,12,27,7,Heat,NA
+154,MD-1-24,0.635,20240716,Madracis decactis,1,1,1,1,2,27,5,Control,NA
+155,MD-1-25,0.64,20240717,Madracis decactis,3,11,3,2,7,27,4,Control,NA
+158,MD-1-3,0.636,20240717,Madracis decactis,3,10,2,2,7,27,4,Control,NA
+161,MD-1-4,0.641,20240717,Madracis decactis,3,9,9,2,10,27,2,pH,NA
+162,MD-1-5,0.635,20240716,Madracis decactis,3,10,2,2,6,27,7,Heat,probe fell out
+163,MD-1-6,0.635,20240717,Madracis decactis,2,6,6,1,10,27,2,pH,NA
+164,MD-1-7,0.633,20240716,Madracis decactis,2,5,1,1,1,27,4,Control,NA
+165,MD-1-8,0.64,20240716,Madracis decactis,3,9,1,2,4,27,3,pH,NA
+166,MD-1-9,0.64,20240716,Madracis decactis,2,8,4,2,2,27,5,Control,NA
+168,MD-2-1,0.636,20240716,Madracis decactis,3,12,4,2,6,27,7,Heat,NA
+169,MD-2-10,0.635,20240717,Madracis decactis,1,1,1,1,9,27,3,pH,NA
+171,MD-2-12,0.642,20240716,Madracis decactis,1,3,3,1,6,27,7,Heat,NA
+173,MD-2-14,0.635,20240716,Madracis decactis,3,10,2,2,5,27,6,Heat,NA
+176,MD-2-17,0.636,20240716,Madracis decactis,2,7,3,2,4,27,3,pH,NA
+178,MD-2-19,0.635,20240717,Madracis decactis,1,1,1,1,7,27,4,Control,NA
+180,MD-2-20,0.636,20240716,Madracis decactis,1,4,4,1,3,27,2,pH,NA
+181,MD-2-20,0.636,20240717,Madracis decactis,2,6,2,1,9,27,3,pH,NA
+183,MD-2-22,0.635,20240717,Madracis decactis,2,8,4,2,7,27,4,Control,NA
+186,MD-2-25,0.642,20240716,Madracis decactis,3,9,1,2,3,27,2,pH,NA
+191,MD-2-4,0.636,20240717,Madracis decactis,1,3,3,1,11,27,6,Heat,Duplicate in run5
+192,MD-2-4,0.636,20240716,Madracis decactis,1,2,2,1,5,27,6,Heat,NA
+193,MD-2-5,0.637,20240716,Madracis decactis,1,4,4,1,2,27,5,Control,NA
+194,MD-2-6,0.636,20240717,Madracis decactis,3,10,2,2,8,27,5,Control,NA
+195,MD-2-7,0.636,20240717,Madracis decactis,3,12,12,2,12,27,7,Heat,NA
+197,MD-2-9,0.635,20240716,Madracis decactis,2,8,4,2,3,27,2,pH,NA
+199,MD-4-1,0.64,20240716,Madracis decactis,3,9,1,2,1,27,4,Control,NA
+200,MD-4-10,0.635,20240716,Madracis decactis,2,6,2,1,1,27,4,Control,NA
+201,MD-4-11,0.635,20240717,Madracis decactis,2,7,7,2,12,27,7,Heat,NA
+203,MD-4-13,0.644,20240717,Madracis decactis,2,8,4,2,8,27,5,Control,NA
+207,MD-4-18,0.626,20240716,Madracis decactis,3,11,3,2,6,27,7,Heat,NA
+208,MD-4-19,0.64,20240716,Madracis decactis,1,4,4,1,1,27,4,Control,NA
+209,MD-4-2,0.635,20240717,Diploria labyrinthiformis,1,2,2,1,8,27,5,Control,NA
+210,MD-4-20,0.636,20240716,Madracis decactis,2,6,2,1,2,27,5,Control,NA
+211,MD-4-21,0.641,20240717,Madracis decactis,2,7,7,2,10,27,2,pH,NA
+212,MD-4-22,0.636,20240717,Madracis decactis,3,9,1,2,9,27,3,pH,NA
+214,MD-4-24,0.643,20240716,Madracis decactis,1,2,2,1,4,27,3,pH,NA
+215,MD-4-25,0.6445,20240717,Madracis decactis,2,8,4,2,9,27,3,pH,NA
+216,MD-4-26,0.63,20240716,Madracis decactis,3,11,3,2,2,27,5,Control,NA
+221,MD-4-4,0.638,20240717,Madracis decactis,1,2,2,1,12,27,7,Heat,NA
+222,MD-4-5,0.635,20240717,Madracis decactis,1,4,4,1,10,27,2,pH,NA
+223,MD-4-6,0.636,20240717,Madracis decactis,1,2,2,1,11,27,6,Heat,NA
+224,MD-4-7,0.635,20240716,Madracis decactis,3,11,3,2,5,27,6,Heat,NA
+226,MD-4-9,0.64,20240717,Madracis decactis,1,1,1,1,10,27,2,pH,NA
+227,MD-5-1,0.638,20240716,Madracis decactis,1,3,3,1,3,27,2,pH,NA
+228,MD-5-10,0.637,20240716,Madracis decactis,1,1,1,1,6,27,7,Heat,NA
+229,MD-5-11,0.64,20240716,Madracis decactis,2,6,2,1,5,27,6,Heat,NA
+231,MD-5-13,0.637,20240717,Madracis decactis,2,5,1,1,9,27,3,pH,NA
+232,MD-5-14,0.637,20240716,Madracis decactis,3,10,2,2,1,27,4,Control,NA
+233,MD-5-15,0.635,20240717,Madracis decactis,3,9,9,2,11,27,6,Heat,NA
+234,MD-5-16,0.636,20240717,Madracis decactis,2,8,8,2,11,27,6,Heat,NA
+235,MD-5-17,0.641,20240716,Madracis decactis,3,12,4,2,3,27,2,pH,NA
+237,MD-5-19,0.636,20240717,Madracis decactis,1,2,2,1,7,27,4,Control,NA
+239,MD-5-20,0.637,20240716,Madracis decactis,1,4,4,1,6,27,7,Heat,NA
+240,MD-5-21,0.64,20240716,Madracis decactis,3,12,4,2,2,27,5,Control,NA
+242,MD-5-23,0.637,20240716,Madracis decactis,3,10,2,2,4,27,3,pH,NA
+244,MD-5-25,0.627,20240716,Madracis decactis,2,5,1,1,3,27,2,pH,NA
+247,MD-5-4,0.635,20240717,Madracis decactis,2,5,5,1,12,27,7,Heat,NA
+249,MD-5-6,0.635,20240717,Madracis decactis,1,1,1,1,8,27,5,Control,BATTERIES START TO SLOW DOWN
+250,MD-5-7,0.635,20240716,Madracis decactis,2,5,1,1,5,27,6,Heat,NA
+251,MD-5-8,0.642,20240717,Madracis decactis,1,4,4,1,12,27,7,Heat,NA
+252,MD-5-9,0.635,20240717,Madracis decactis,2,6,2,1,8,27,5,Control,NA
