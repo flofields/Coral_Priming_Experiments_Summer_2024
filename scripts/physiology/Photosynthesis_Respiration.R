@@ -1,27 +1,49 @@
 ---
 title: "Photosynthesis and respiration rate calculations"
-author: "Danielle Becker"
+author: "Danielle Becker adapted from Hollie Putnam"
 edited by: "Florence Fields"
 date: "20240616"
 output: html_document
 ---
+  
+
 #clear lists
 rm(list=ls())
 
-#Read in required libraries
+## install packages if you dont already have them in your library
+if (!require("devtools")) install.packages("devtools")
+if (!require("furrr")) install.packages("furrr")
+if (!require("future")) install.packages("future")
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("gridExtra")) install.packages("gridExtra")
+if (!require("ggpubr")) install.packages("ggpubr")
+if (!require("lubridate")) install.packages("lubridate")
+if (!require("cowplot")) install.packages("cowplot")
+if (!require("LoLinR")) install_github('colin-olito/LoLinR') 
+if (!require("ggstatsplot")) install.packages("ggstatsplot")
+if ("rTPC" %in% rownames(installed.packages()) == 'FALSE') remotes::install_github("padpadpadpad/rTPC")
+if ("nls.multstart" %in% rownames(installed.packages()) == 'FALSE') install.packages('nls.multstart')
+if ("broom" %in% rownames(installed.packages()) == 'FALSE') install.packages('broom') 
 
-##### Include Versions of libraries
-remotes::install_github('colin-olito/LoLinR')
-library("ggplot2")
-library("segmented")
-library("plotrix")
-library("gridExtra")
-library("LoLinR")
-library("lubridate")
-library("chron")
-library('plyr')
-library('dplyr')
-library('tidyverse')
+#Read in required libraries
+library(devtools)
+library(LoLinR)
+library(tidyverse)
+library(gridExtra)
+library(ggpubr)
+library(lubridate)
+library(cowplot)
+library(ggstatsplot)
+library(rTPC)
+library(nls.multstart)
+library(broom)
+library(car)
+library(scales)
+
+## libraries for parallel processing
+library(future)
+library(furrr)
+
 
 
 # get the file path

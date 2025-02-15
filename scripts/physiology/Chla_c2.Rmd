@@ -1,0 +1,288 @@
+---
+title: "Cholorphyll a & c2"
+author: "HM Putnam, AS Huffmyer"
+editied: "Florence Fields"
+date: "2025-01-29"
+project:ENCORE
+output: html_document
+---
+
+This script calculates chlorphyll a and c2 content in Mdec and Dlab samples from the Priming experiment conducted in Bermuda 2024 and is an edited version of scipts from Jill and E5 edited by Hollie and Arianna https://github.com/daniellembecker/A.pul_Heatwave/blob/master/heatwave/timeseries/timepoint1/1_scripts/1_chlorophyll.Rmd
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024")
+
+```
+
+
+## Install packages if you dont already have them
+```{r}
+
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("plotrix")) install.packages("plotrix")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("Rmisc")) install.packages("Rmisc")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("gridExtra")) install.packages("gridExtra")
+if (!require("formattable")) install.packages("formattable")
+if (!require("data.table")) install.packages("data.table")
+if (!require("htmltools")) install.packages("htmltools")
+if (!require("webshot")) install.packages("webshot")
+
+```
+
+## Load packages
+```{r}
+
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(plotrix)
+library(Rmisc)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(htmltools)
+library(webshot)
+library(lme4)
+library(MuMIn)
+library(cowplot)
+library(corrplot)
+library(lmerTest)
+library(scales)
+
+```
+
+## Importing data and merging into one large dataframe
+```{r}
+
+# Define function to read in chl data
+read_chl <- function(file) {
+  chl_data <- read_csv(file, skip = 24, n_max = 24) %>%
+    select(-1) %>%
+    magrittr::set_colnames(c("row", 1:12, "wavelength")) %>%
+    fill(row) %>%
+    gather("col", "absorbance", -wavelength, -row) %>%
+    unite("well", c(row, col), sep = "")
+}
+
+# List chlorophyll data files
+chl_path <- "data/physiology/Chlorophyll/"                               # Path to chlorophyll data directory
+all_chl_files <- list.files(path = chl_path, pattern = "*.csv")          # List all files in directory
+chl_platemaps <- list.files(path = chl_path, pattern = "platemap")       # List platemap files
+chl_data_files <- setdiff(all_chl_files, chl_platemaps)                  # List absorbance data files
+
+# Read in all files into tibble
+df <- tibble(file = chl_data_files) %>%
+  mutate(platemap = map(file, ~ read_csv(paste0(chl_path, tools::file_path_sans_ext(.), "_platemap.csv"))),
+         chl_data = map(file, ~ read_chl(paste0(chl_path, .))))
+
+# Merge platemap and data for each plate
+df <- df %>%
+  mutate(merged = map2(platemap, chl_data, ~ right_join(.x, .y)))
+
+```
+
+# Calculate chlorophyll concentrations
+```{r}
+# average all technical replicates for each plate/sample/wavelength, including all acetone blanks together (per plate)
+
+df1 <- df %>%
+  unnest(merged) %>% # Unnest the merged column to access individual rows
+  group_by(file, Fragment_ID, wavelength) %>% # Group by plate, sample, and wavelength
+  summarize(avg_absorbance = mean(absorbance, na.rm = TRUE)) %>% # Calculate the average absorbance
+  filter(!is.na(Fragment_ID)) %>%
+  spread(wavelength,avg_absorbance )
+
+
+# get the acetone blank 750 absorbace for each file (i.e., plate), and subtract from 630 and 663 values for each sample
+df1 <- df1 %>%
+  group_by(file) %>%
+  mutate(blank750 = `Chl:750`[Fragment_ID== "BLK"]) %>%
+  ungroup() %>%
+  mutate(adj630 = `Chl:630` - blank750,
+         adj663 = `Chl:663` - blank750)
+
+# calculate chla and chlc2 values based on equations from Jeffrey and Humphrey 1975
+# units µg/ml
+#path length adjustment = 0.6 
+
+df1 <- df1 %>%
+  mutate(chla.ug.ml = (11.43 * adj663)/0.6 - (0.64 * adj630)/0.6,
+        chlc2.ug.ml = (27.09 * adj630)/0.6 - (3.63 * adj663)/0.6)
+```
+
+# Normalize to surface area
+```{r}
+# Load homogenate volume
+homog.vol <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Airbrushing_data.csv")%>%
+  select(Species, Fragment_ID, Homogenate.Vol)
+chl <- full_join(df1, homog.vol)
+
+# Load surface area
+sa <- read_csv("output/physiology/Surface_Area/Surface_Area.csv")%>%
+rename(Fragment_ID = Colony_id)
+chl <- full_join(chl, sa)
+
+# Multiply chlorophyll by the homogenate volume and divide by surface area
+chl <- chl %>%
+  mutate(chla.ug.cm2 = chla.ug.ml * Homogenate.Vol / surface.area.cm2,
+         chlc2.ug.cm2 = chlc2.ug.ml * Homogenate.Vol / surface.area.cm2)
+
+# write chlorophyll data to file and remove blanks and NAs
+chl1<- chl%>%
+  select(Fragment_ID, Species, Sample_date, Tank, chla.ug.cm2, chlc2.ug.cm2)%>%
+  mutate(timepoint= case_when(                   #Adding the timepoint colunm corelating the timepoints with the sample dates 
+    Sample_date == "20240620" ~ "TP1",
+    Sample_date == "20240709" ~ "TP2",
+    Sample_date == "20240723" ~ "TP3",
+    Sample_date == "20240806" ~ "TP4",
+    Sample_date == "20240815" ~ "TP5"
+    ),
+    Colony = case_when(
+      grepl("^DL-1($|-)", Fragment_ID) ~ 1,
+      grepl("^DL-2($|-)", Fragment_ID) ~ 2,
+      grepl("^DL-3($|-)", Fragment_ID) ~ 3,
+      grepl("^DL-4($|-)", Fragment_ID) ~ 4,
+      grepl("^MD-1($|-)", Fragment_ID) ~ 1,
+      grepl("^MD-2($|-)", Fragment_ID) ~ 2,
+      grepl("^MD-4($|-)", Fragment_ID) ~ 4,
+      grepl("^MD-5($|-)", Fragment_ID) ~ 3,
+      TRUE ~ NA_integer_
+                     ))%>%
+  filter(!is.na(chla.ug.cm2))%>%
+  write_csv(path = "output/physiology/chlorophyll/chlorophyll.csv")
+```
+
+# Plot results by species and colony and date
+```{r, eval = TRUE}
+
+# Plot chlorophyll a
+
+chl1 %>%
+  ggplot(aes(x = timepoint , y = chla.ug.cm2, color = Species)) +
+  #facet_wrap(~species) +
+  labs(x = "", y = "chlorophyll c2 (µg/cm2)") +
+  geom_jitter(width = 0.1) +                                            # Plot all points
+  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
+               geom = "errorbar", color = "black", width = 0.5) +
+  stat_summary(fun.y = mean, geom = "point", color = "black")+
+  theme_classic() +
+   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_1.pdf", device = "pdf", width = 10, height = 10)
+
+##OPTION2
+
+ggplot(chl1, aes(x = timepoint, y = chla.ug.cm2, color = Species)) +
+  facet_wrap(~Colony) +
+  labs(x = "", y = "chlorophyll a (µg/cm2)") +
+  geom_jitter(width = 0.1) +                                            # Plot all points
+  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
+               geom = "errorbar", color = "black", width = 0.5) +
+  stat_summary(fun.y = mean, geom = "point", color = "black") +
+  theme_classic() +
+  theme(
+    panel.border = element_rect(colour = "black", fill = NA, size = 1),
+    strip.background = element_rect(colour = "black", fill = "white"),
+    panel.spacing = unit(1, "lines"),  # Add spacing between facets
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    strip.text = element_text(face = "bold")  # Make facet labels bold
+  ) +
+  theme(
+    strip.placement = "outside", # Position facet labels outside the panels
+    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
+  ) +
+   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_2.pdf", device = "pdf", width = 10, height = 10)
+
+##Note i should be making the plot a dataframe then saving using the code below but although I recieved an error message it worked so no need to change it.
+#ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_2.pdf", plot = p, device = "pdf", width = 10, height = 10)
+
+# Plot chlorophyll c2
+chl1 %>%
+  ggplot(aes(x = timepoint , y = chlc2.ug.cm2, color = Species)) +
+  #facet_wrap(~species) +
+  labs(x = "", y = "chlorophyll c2 (µg/cm2)") +
+  geom_jitter(width = 0.1) +                                            # Plot all points
+  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
+               geom = "errorbar", color = "black", width = 0.5) +
+  stat_summary(fun.y = mean, geom = "point", color = "black")+
+  theme_classic()+
+   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chlac2_1.pdf", device = "pdf", width = 10, height = 10)
+
+###OPTION 2
+
+
+ggplot(chl1, aes(x = timepoint, y = chlc2.ug.cm2, color = Species)) +
+  facet_wrap(~Colony) +
+  labs(x = "", y = "chlorophyll a (µg/cm2)") +
+  geom_jitter(width = 0.1) +                                            # Plot all points
+  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
+               geom = "errorbar", color = "black", width = 0.5) +
+  stat_summary(fun.y = mean, geom = "point", color = "black") +
+  theme_classic() +
+  theme(
+    panel.border = element_rect(colour = "black", fill = NA, size = 1),
+    strip.background = element_rect(colour = "black", fill = "white"),
+    panel.spacing = unit(1, "lines"),  # Add spacing between facets
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    strip.text = element_text(face = "bold")  # Make facet labels bold
+  ) +
+  theme(
+    strip.placement = "outside", # Position facet labels outside the panels
+    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
+  )+
+  ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chlac2_2.pdf", device = "pdf", width = 10, height = 10)
+```
+
+# Calculate the mean at each tmepoint and each species 
+```{r, eval = TRUE}
+
+mean_datachl <- chl1 %>%
+  group_by(timepoint, Species, Colony) %>%
+  summarize(mean_chla = mean(chla.ug.cm2, na.rm = TRUE),
+            mean_chlc2 = mean(chlc2.ug.cm2, na.rm = TRUE))
+
+
+
+mean_datachl_long <- mean_datachl %>%
+  pivot_longer(cols = c(mean_chla, mean_chlc2), 
+               names_to = "variable", 
+               values_to = "value")
+
+#Maybe do some line graphs with this
+
+```
+
+
+# Statistical Test
+```{r}
+## Test for differences in salinity by treatment with one-way ANOVA
+res.aov <- aov(Salinity ~ PrimingTreatment, data = carb_output3)
+summary(res.aov)
+TukeyHSD(res.aov) # See if there is any differences between specific treatments 
+plot(res.aov, 1) # Check ANOVA assumptions of normality 
+leveneTest(Salinity ~ PrimingTreatment, data = carb_output3) # Check ANOVA assumptions of homogenity of variance   
+
+
+```
+
+Adding statistical significance to graphs
+```{r}
+# Example significance data frame
+signif_data <- data.frame(
+  timepoint = c("TP1", "TP2", "TP3"),  # Timepoints where significance is detected
+  Species = c("Species1", "Species1", "Species2"),  # Corresponding species
+  y_position = c(5, 6, 7),  # Adjust this to be above the highest data point
+  label = c("***", "**", "*")  # Significance stars
+)
+
+
+
+ggplot(chl, aes(timepoint, chlc2.ug.cm2))
+
+
+```
+

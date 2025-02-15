@@ -69,6 +69,8 @@ Calculate the calibration curve from the Tris calibration and calculate pH on th
 pHcalib<-read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/TrisCal/Tris_Calibration.csv")
 pHcalib$Tris.date<-as.character(pHcalib$Tris.date)
 
+daily <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/daily_measurements.csv")
+
 #Changing the name of coloumn 11 in the daily dataset from tris.date to Tris.date
 colnames(daily)[colnames(daily) == 'tris.date'] <- 'Tris.date'
 
@@ -105,38 +107,57 @@ daily_calc<-daily_calc%>%
 
 No need to apply the immersion correction factor. The MQ-510 Underwater Quantum Meters already apply the immersion effect correction factor to the meter readings through the meter firmware. [See Documentation Here](https://www.apogeeinstruments.com/underwater-par-measurements/)
 
-## Change to long format
+## Remove nbs values and change to long format
 
 Change data format to long format
 
 ```{r}
+daily_calc <- daily_calc %>% filter(pH.total >= 6)
+daily_calc <- daily_calc %>% filter(sal.psu >=35)
+daily_calc <- daily_calc %>% mutate(treatment = ifelse(treatment == "contrrol", "control", treatment))
+daily_calc <- daily_calc[, -which(names(daily_calc) == "pH.nbs")]
 daily_calc.long <-daily_calc %>% pivot_longer(cols=temp.C:flow.L.min,
   names_to = "metric",
   values_to = "value")
+
 ```
 
 Filter by relevant dates if needed
+
+# Convert continuous variable to categorical
+
+#data$category <- cut(data$value, breaks = c(0, 3, 6, 9), labels = c("Low", "Medium", "High"))
+
+## 
+
+```         
+```
 
 ## Plot metrics of interest
 
 Plot by date colored by treatment and tank. (may change script in the fields according to my needs)
 
 ```{r}
+daily_calc.long <- daily_calc.long %>% arrange(treatment, date)
 ## Treatment
 daily_treatment<-daily_calc.long %>%
+  filter(!is.na(value)) %>%
   ggplot(aes(x=date, y=value, colour=treatment))+
   geom_point(size=2)+
   xlab("Date")+
-  facet_wrap(metric ~ ., scales = "free")+
+  facet_wrap(~metric,, scales= "free_y", nrow=5)+
+  theme(axis.text.x = element_text(angle=45, hjust=1))+
   theme_bw(); daily_treatment
   
 ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/treatment_daily_measurements.pdf", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
 
 
 daily_treatment<-daily_calc.long %>%
+  filter(!is.na(value)) %>%
   ggplot(aes(x=date, y=value, colour=treatment))+
   geom_line(size=.5)+
   xlab("Date")+
+  theme(axis.text.x = element_text(angle=50, hjust=1))+
   facet_wrap(metric ~ ., scales = "free")+
   theme_bw(); daily_treatment
   
@@ -144,18 +165,42 @@ ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Cor
 
 
 ## Tank type
-daily_tank<-daily_calc.long %>%
-  ggplot(aes(x=date, y=value, colour=tank))+
-  geom_point(size=2)+
-  xlab("Date")+
-  facet_grid(metric ~ ., scales = "free")+
-  theme_bw(); daily_tank
-  
-ggsave(filename= "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/tank_daily_measurements_.pdf", plot=daily_tank, dpi=300, width=6, height=8, units="in")
+daily_tank2 <- daily_calc.long %>%
+  filter(!is.na(value)) %>%  
+  ggplot(aes(x = date, y = value, colour = tank)) +
+  geom_point(size = 2) +
+   scale_color_gradientn(colours = c("blue", "darkgreen", "yellow", "red"))+
+  xlab("Date") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 65, hjust = 1)) +
+  facet_grid(metric ~ ., scales = "free")
+
+
+ggsave(filename= "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/tank_daily_measurements2_.pdf", plot=daily_tank2, dpi=300, width=6, height=8, units="in")
 
 ```
 
 ```{r}
+library(dplyr)
+library(ggplot2)
+
+# Ensure the date column is in Date format
+daily_calc.long$date <- as.Date(daily_calc.long$date, format = "%Y-%m-%d")
+
+# Check for missing values
+sum(is.na(daily_calc.long$date))
+sum(is.na(daily_calc.long$value))
+sum(is.na(daily_calc.long$value))
+
+# Ensure the data is sorted by date within each treatment
+daily_calc.long <- daily_calc.long %>%
+  arrange(treatment, date)
+
+# Plot the data
+daily_calc.long %>% filter(!is.na(value)) %>% ggplot(aes(x = date, y = value, colour = treatment)) + geom_point(size = 2) + xlab("Date") + facet_wrap(metric ~ ., scales = "free_y", nrow = 5) + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) + theme_bw()
+
+# Display the plot
+print(daily_treatment)
 
 ```
 

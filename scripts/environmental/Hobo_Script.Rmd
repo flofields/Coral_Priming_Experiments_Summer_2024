@@ -12,6 +12,7 @@ library(dplyr)
 library(purrr)
 library(readr)
 library(ggplot2)
+library(lubridate)
 
 ```
 
@@ -27,11 +28,11 @@ You can also embed plots, for example:
 
 ```{r setup, echo=FALSE}
 # Read all CSV files into a list of data frames and remove specific rows
-tank5<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank5.csv")
-tank4<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank4.csv")
-tank6<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank6.csv")
-tank7<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank7.csv")
-tank3<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240815/temp_tank3.csv")
+tank5<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240724/temp_tank5.csv")
+tank4<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240724/tem_tank4.csv")
+tank6<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240724/temp_tank6.csv")
+tank7<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240724/temp_tank7.csv")
+tank3<- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/environmental/HobologgerData/20240724/temp_tank3.csv")
 
 #Removing the first coloumn, we don't need it
 
@@ -68,54 +69,70 @@ tank3<- tank3[-c(1),]
 
 #Assigning tank numbers to each file
 tank4 <- tank4 %>%
-  mutate(tank = rep("tank4", 1991))
+  mutate(tank = rep("tank4", 7190))
 tank6 <- tank6 %>%
-  mutate(tank = rep("tank6", 2017))
+  mutate(tank = rep("tank6", 579))
 tank7 <- tank7 %>%
-  mutate(tank = rep("tank7", 2002))
+  mutate(tank = rep("tank7", 10111))
 tank5 <- tank5 %>%
-  mutate(tank = rep("tank5", 1990))
+  mutate(tank = rep("tank5", 10131))
 tank3 <- tank3 %>%
   mutate(tank = rep("tank3", 1651))
 
 
 # Combine all data frames into one
-tank_list<- list(tank4,tank5,tank6,tank7,tank3)
+tank_list<- list(tank4,tank5,tank6,tank7)
+
 
 tank_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), tank_list)
 #tank_merge<- tank_merge[-c(4:7)]
 head(tank_merge)
 
-write.csv(tank_merge, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240815TempHobo.csv")
+write.csv(tank_merge, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240724TempHobo.csv")
 
 ```
 
 #Merging all hobo data and plotting it
 
 ```{r}
-df1 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240724TempHobo.csv")
+df1 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240724TempHobo.csv")
 
-df2 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240808TempHobo.csv")
+df2 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240808TempHobo.csv")
 
-df3 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240815TempHobo.csv")
+df3 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo/20240815TempHobo.csv")
 df1<- df1[-c(1)]
 df2<- df2[-c(1)]
 df3<- df3[-c(1)]
 
+# Convert Date.time to POSIXct format
+df1$Date.time <- mdy_hm(df1$Date.time)
+df2$Date.time <- mdy_hm(df2$Date.time)
+df3$Date.time <- mdy_hm(df3$Date.time)
+
+df_list<- list(df1,df2,df3)
+#remove_na <- function(df) {
+#  df[complete.cases(df), ]
+#}
+#df_list <- lapply(df_list, remove_na)
+
+
+df_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
 ```
 
 ```{r}
 #Individual date collection Hobo plots 
 
-ggplot(df1, aes(Date.time, Temperature, color= "tank"))+
-  geom_line()
+ggplot(df1, aes(Date.time, Temperature, color = tank))+
+  geom_line()+
+  facet_wrap(~ tank, scales = "free_y")
 
 
-ggplot(df1, aes(x = Date.time, y=Temperature, color= tank)) +
-  geom_point() +
+ggplot(df_merge, aes(x = Date.time, y=Temperature, color= tank)) +
+  geom_line() +
   facet_wrap(~ tank, scales = "free_y") +
-  labs(x = "Time", y = "Temperature °C") +
-  theme_minimal() +
+  labs(x = "Date", y = "Temperature °C") +
+  theme_minimal()+
+  ggsave(path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo", filename = "hobotemp.pdf")
   theme(axis.text.x = element_text(angle=-40),legend.position = "top", 
         legend.text = element_text(size = 7),
                                    legend.title = element_text(size = 8))+

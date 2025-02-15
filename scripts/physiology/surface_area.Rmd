@@ -1,0 +1,81 @@
+---
+title: "Surface Area Calculations from Wax Dipping"
+author: "HM Putnam, AS Huffmyer"
+edited: "FE Fields
+date: "01/24/2025"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+This script was edited to suit the ENCORE Priming surface area data set and adapted from HM Putnam, AS Huffmyer script for the E5 project found at this link https://github.com/urol-e5/timeseries/blob/master/timepoint_1/scripts/surface_area.Rmd  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+## Set working directory 
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024")
+
+## install packages if you dont already have them
+if (!require("tidyverse")) install.packages("tidyverse")
+
+# load packages
+library(tidyverse)
+```
+
+```{r}
+
+#load wax data
+wax.data <- read.csv("data/physiology/Surface_Area/Wax-Dipping/Wax_Dip_Surface_Area_Datasheet.csv", header=TRUE)
+#load in standard curve data
+Wax_Dipping_Curve <- read_csv("data/physiology/Surface_Area/Wax-Dipping/Wax_Dipping_Curve_091522.csv")
+
+#Making weight before and after are both numeric
+wax.data$weight_after_g <- as.numeric(wax.data$weight_after_g)
+wax.data$weight_before_g <- as.numeric(wax.data$weight_before_g)
+
+# Removing extra empty columns that were imported with the wax.data and Wax_Dipping_Curve dataset 
+# Note: The standard data was collected and calculated in R by Taylor Lindsay in excel but for the purposes of this script I will be removing those columns and recalculating parameters.
+wax.data <- wax.data[, -c(9:27)]
+Wax_Dipping_Curve<- Wax_Dipping_Curve[, -c(5:17)]
+
+wax.data$delta.mass.g <- wax.data$weight_after_g-wax.data$weight_before_g
+Wax_Dipping_Curve$delta.mass.g <- Wax_Dipping_Curve$Wax_Weight-Wax_Dipping_Curve$Weight1
+
+# Standard data is in a dataset of it's own so no need to subset the data but I will be renaming it while removing all NAs
+stnds <- na.omit(Wax_Dipping_Curve)
+
+#Renaming my colunm from Sample diameter to Diameter
+colnames(stnds)[colnames(stnds) == "Sample diameter"] <- "Diameter"
+
+#calculate the surface area of the spherical standards from the diameter
+stnds$rad <- stnds$Diameter/2
+stnds$surface.area.cm2 <- 4*pi*(stnds$rad)^2
+
+# calculate the curve coefficients for slope and intercept to apply as the standard
+stnd.curve <- lm(surface.area.cm2~delta.mass.g, data=stnds)
+plot(surface.area.cm2~delta.mass.g, data=stnds)
+stnd.curve$coefficients
+summary(stnd.curve)$r.squared
+
+#Calculate surface area using the standard curve
+#smpls <- subset(wax.data, Replicate %in% c("1", "2"))
+smpls <-wax.data
+smpls$surface.area.cm2 <- stnd.curve$coefficients[2] * smpls$delta.mass.g + stnd.curve$coefficients[1]
+
+#removed the empty diameter column that was imported in with the orginal dataset
+smpls <- smpls %>%
+  select(-Diamerter)
+
+smpls %>%
+  count(Colony_id) %>% arrange(n)
+
+#check the range to make sure your samples fall within the range of the standards
+range(smpls$surface.area.cm2)
+range(stnds$surface.area.cm2)
+
+#Save the output for use in normilzation for phys assays
+smpls%>%
+  select(Colony_id, surface.area.cm2, Sample_date, Tank)%>%
+  write_csv("output/physiology/Surface_Area/Surface_Area.csv")
+
+```
