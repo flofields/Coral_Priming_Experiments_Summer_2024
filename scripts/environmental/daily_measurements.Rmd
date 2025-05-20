@@ -152,6 +152,13 @@ daily_treatment<-daily_calc.long %>%
 ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/treatment_daily_measurements.pdf", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
 
 
+#renaming contorrl to control
+daily_calc.long <- daily_calc.long %>%
+  mutate(treatment = case_when(
+    treatment == "contrrol" ~ "control",
+    TRUE ~ treatment  # Keep the original value if no match
+  ))
+
 daily_treatment<-daily_calc.long %>%
   filter(!is.na(value)) %>%
   ggplot(aes(x=date, y=value, colour=treatment))+
@@ -160,8 +167,45 @@ daily_treatment<-daily_calc.long %>%
   theme(axis.text.x = element_text(angle=50, hjust=1))+
   facet_wrap(metric ~ ., scales = "free")+
   theme_bw(); daily_treatment
-  
-ggsave(filename="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/treatment_daily_measurements_line_graph.pdf", plot=daily_treatment, dpi=300, width=6, height=8, units="in")
+
+
+#Plotting a line graph of temp 
+
+daily_calc.long2 <- daily_calc.long %>%
+  filter(metric != "flow.L.min",
+         metric != "sal.psu",
+         metric != "par.avg",
+         metric != "pH.total")
+# Convert the date strings to Date type
+daily_calc.long2$date <- as.Date(daily_calc.long2$date, format = "%m/%d/%Y")  # Adjust the format string as necessary
+
+
+#Combining tank and treatment variables to create new column  
+daily_calc.long2 <- daily_calc.long2 %>%
+  mutate(tank_intial_treatment = paste(tank, treatment))
+
+daily_calc.long2 <- daily_calc.long2 %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_intial_treatment == "6 low_ph" ~ "6 heated",
+    TRUE ~ tank_intial_treatment
+  ))
+
+daily_calc.long2 <- daily_calc.long2 %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_intial_treatment == "7 low_ph" ~ "7 heated",
+    TRUE ~ tank_intial_treatment
+  ))
+
+
+
+ggplot(daily_calc.long2, aes(date, value, color = tank_intial_treatment))+
+  geom_line()+
+  scale_fill_manual(name = "Tank Treatment", 
+                    values = c("lightblue", "blue", "darkblue", "red", "darkred","magenta",  "purple"))+
+  scale_color_manual(label = c("Acclimation","Tank 2 = Low pH", "Tank 3 = Low pH","Tank 4 = Control", "Tank 5 = Control", "Tank 6 = High Heat", "Tank 7 = High Heat"), 
+                     name = "Initial Tank Treatment", values = c("lightblue", "blue", "darkblue", "red", "darkred","magenta",  "purple"))+
+    labs(x = "Date", y = "Temperature °C")+theme_classic()
+ggsave(filename = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/temp_daily_line_graph.pdf", device = "pdf", width = 10, height = 10)
 
 
 ## Tank type
@@ -175,8 +219,279 @@ daily_tank2 <- daily_calc.long %>%
   theme(axis.text.x = element_text(angle = 65, hjust = 1)) +
   facet_grid(metric ~ ., scales = "free")
 
-
 ggsave(filename= "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/tank_daily_measurements2_.pdf", plot=daily_tank2, dpi=300, width=6, height=8, units="in")
+
+```
+
+# Combining Apex and filling in missing data with daily measurements 
+
+pH Measurements
+
+```{r}
+#pH measurements 
+
+
+daily_calc.long3 <- daily_calc.long %>%
+  filter(metric != "flow.L.min",
+         metric != "sal.psu",
+         metric != "par.avg",
+         metric != "temp.C")
+# Convert the date strings to Date type
+daily_calc.long3$date <- as.Date(daily_calc.long3$date, format = "%m/%d/%Y")  # Adjust the format string as necessary
+
+#import ph apex data
+apex <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Merged_Apex_Data_Output.csv")
+
+#removing temp colunms
+apexpH <- apex %>%
+  select(-c(1,3,5,7,9,11,13,15))
+
+#seperating my date,time colunm to a date and time colunm
+apexpH <- apexpH %>%
+  separate(Date.Time, into = c("date", "time"), sep = " ")
+
+
+#convert datset to long format
+apexpH_long <- apexpH %>%
+  pivot_longer(cols = starts_with("pH_T"),
+               names_to = "tank_treatment",
+               values_to = "value") %>%
+  separate(tank_treatment, into = c("pH", "tank_treatment"), sep = "_") %>%
+  select(-pH)
+
+apexpH_long <- apexpH_long %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_treatment == "T2" ~ "2 low_ph",
+    tank_treatment == "T3" ~ "3 low_ph",
+    tank_treatment == "T4" ~ "4 control",
+    tank_treatment == "T5" ~ "5 control",
+    tank_treatment == "T6" ~ "6 heated",
+    tank_treatment == "T7" ~ "7 heated",
+    TRUE ~ tank_treatment
+  ))
+
+apexpH_long <- apexpH_long%>%
+  select(date, time, value, tank_intial_treatment ) %>%
+  mutate(date = format(as.Date(date, format = "%m/%d/%Y"), "%Y-%m-%d"))
+
+average_values <- apexpH_long%>%
+  group_by(date, tank_intial_treatment)%>%
+  summarise(avg_value = mean(value, na.rm = TRUE))
+
+#removing unwanted rows
+average_values <- average_values[-c(175:180), ]
+
+#remove pH data from daily_calc.long3 that will be replaced
+daily_calc.long4 <- daily_calc.long3[-c(10:35,38:41, 50:55, 63:95, 98:101, 110:115, 120:155, 158:161, 170:175, 184:193), ]
+
+
+daily_calc.long4 <- daily_calc.long4 %>%
+  mutate(treatment = case_when(
+    tank == "6" ~ "High Temp",
+    tank == "7" ~ "High Temp",
+    tank == "2" ~ "Low pH",
+    tank == "3" ~ "Low pH",
+    tank == "5" ~ "Control",
+    tank == "4" ~ "Control",
+    tank == "1"~ "Acclimation",
+    TRUE ~ as.character(tank)))
+
+
+average_values <- average_values %>%
+  rename(value = avg_value)
+
+average_values <- average_values %>%
+  mutate(treatment = case_when(
+    tank_intial_treatment == "6 heated" ~ "High Temp",
+    tank_intial_treatment == "7 heated" ~ "High Temp",
+    tank_intial_treatment == "2 low_ph" ~ "Low pH",
+    tank_intial_treatment == "3 low_ph" ~ "Low pH",
+    tank_intial_treatment == "5 control" ~ "Control",
+    tank_intial_treatment == "4 control" ~ "Control",
+    TRUE ~ as.character(tank_intial_treatment)))
+
+average_values <- average_values %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_intial_treatment == "6 heated" ~ "6",
+    tank_intial_treatment == "7 heated" ~ "7",
+    tank_intial_treatment == "2 low_ph" ~ "2",
+    tank_intial_treatment == "3 low_ph" ~ "3",
+    tank_intial_treatment == "5 control" ~ "5",
+    tank_intial_treatment == "4 control" ~ "4",
+    TRUE ~ as.character(tank_intial_treatment)))
+
+average_values <- average_values %>%
+  rename(tank = tank_intial_treatment)
+
+#average_values <- average_values[-c(170), ]
+
+daily_calc.long4<- daily_calc.long4%>%
+  select(date,tank,treatment,value)
+
+
+#combinding apex and daily pH data
+phuse<- rbind(daily_calc.long4,average_values)
+
+#Adding Acclimation, Priming, recovery and Stress to the dataset
+phuse<- phuse %>%
+  mutate(Timepoint = case_when(
+    date >= as.Date('2024-06-26') & date <= as.Date('2024-07-08') ~ 'acclimation',
+    date >= as.Date('2024-07-09') & date <= as.Date('2024-07-23') ~ 'priming',
+    date >= as.Date('2024-07-24') & date <= as.Date('2024-08-06') ~ 'recovery',
+    date >= as.Date('2024-08-07') & date <= as.Date('2024-08-15') ~ 'stress',
+    TRUE ~ 'unknown'
+  ))
+
+#Plot showing the average total pH with only 4 treatments
+ggplot(phuse, aes(date, value, color = treatment))+
+  geom_line(size = 1)+
+  scale_color_manual(name = "Treatment", 
+                    values = c("lightblue", "darkblue", "red", "purple"))+
+  theme_classic()+
+    labs(x = "Date", y = "Total average pH")+
+ggsave(filename = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/average_pH_treatments.pdf", device = "pdf", width = 10, height = 10)
+
+#Plot showing the average total pH by tank
+ggplot(phuse, aes(date, value, color = tank, fill = "Timpoint"))+
+  geom_line(size = 1)+
+  scale_color_manual(name = "Tank = Priming Treatment", 
+                    values = c("lightblue", "purple", "magenta", "blue", "darkblue", "red", "darkred"),
+                    labels = c("Acclimation", "2 = Low pH", "3 = Low pH", "4 = Control", "5 = Control", "6 = High Temp", "7 = High Temp")
+  )+theme_classic()+
+    labs(x = "Date", y = "Total Average pH")
+ggsave(filename = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/average_pH_treatments2.pdf", device = "pdf", width = 10, height = 10)
+```
+
+Temperature Measurements
+
+```{r}
+
+daily_calc.long2 
+
+# Convert the date strings to Date type
+daily_calc.long2$date <- as.Date(daily_calc.long2$date, format = "%m/%d/%Y")  # 
+
+#removing temp colunms
+apexTemp <- apex %>%
+  select(-c(1,3,4,6,8,10,12,14,16))
+
+#seperating my date,time colunm to a date and time colunm
+apexTemp <- apexTemp %>%
+  separate(Date.Time, into = c("date", "time"), sep = " ")
+
+
+#convert datset to long format
+apexTemp_long <- apexTemp %>%
+  pivot_longer(cols = starts_with("TMP_T"),
+               names_to = "tank_treatment",
+               values_to = "value") %>%
+  separate(tank_treatment, into = c("temp", "tank_treatment"), sep = "_")%>%
+  select(-temp)
+
+apexTemp_long <- apexTemp_long %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_treatment == "T2" ~ "2 low_ph",
+    tank_treatment == "T3" ~ "3 low_ph",
+    tank_treatment == "T4" ~ "4 control",
+    tank_treatment == "T5" ~ "5 control",
+    tank_treatment == "T6" ~ "6 heated",
+    tank_treatment == "T7" ~ "7 heated",
+    TRUE ~ tank_treatment
+  ))
+
+apexTemp_long <- apexTemp_long%>%
+  select(date, time, value, tank_intial_treatment ) %>%
+  mutate(date = format(as.Date(date, format = "%m/%d/%Y"), "%Y-%m-%d"))
+
+averageT_values <- apexTemp_long%>%
+  group_by(date, tank_intial_treatment)%>%
+  summarise(avg_value = mean(value, na.rm = TRUE))
+
+#removing unwanted rows
+averageT_values <- averageT_values[-c(176,177,179,180), ]
+
+#remove pH data from daily_calc.long3 that will be replaced
+daily_calc.long5 <- daily_calc.long2[-c(61,180), ]
+
+
+daily_calc.long5 <- daily_calc.long5 %>%
+  mutate(treatment = case_when(
+    tank == "6" ~ "High Temp",
+    tank == "7" ~ "High Temp",
+    tank == "2" ~ "Low pH",
+    tank == "3" ~ "Low pH",
+    tank == "5" ~ "Control",
+    tank == "4" ~ "Control",
+    tank == "1"~ "Acclimation",
+    TRUE ~ as.character(tank)))
+
+
+averageT_values <- averageT_values %>%
+  rename(value = avg_value)
+
+averageT_values <- averageT_values %>%
+  mutate(treatment = case_when(
+    tank_intial_treatment == "6 heated" ~ "High Temp",
+    tank_intial_treatment == "7 heated" ~ "High Temp",
+    tank_intial_treatment == "2 low_ph" ~ "Low pH",
+    tank_intial_treatment == "3 low_ph" ~ "Low pH",
+    tank_intial_treatment == "5 control" ~ "Control",
+    tank_intial_treatment == "4 control" ~ "Control",
+    TRUE ~ as.character(tank_intial_treatment)))
+
+averageT_values <- averageT_values %>%
+  mutate(tank_intial_treatment = case_when(
+    tank_intial_treatment == "6 heated" ~ "6",
+    tank_intial_treatment == "7 heated" ~ "7",
+    tank_intial_treatment == "2 low_ph" ~ "2",
+    tank_intial_treatment == "3 low_ph" ~ "3",
+    tank_intial_treatment == "5 control" ~ "5",
+    tank_intial_treatment == "4 control" ~ "4",
+    TRUE ~ as.character(tank_intial_treatment)))
+
+averageT_values <- averageT_values %>%
+  rename(tank = tank_intial_treatment)
+
+#average_values <- average_values[-c(170), ]
+
+daily_calc.long5<- daily_calc.long5  %>%
+  select(date,tank,treatment,value)
+
+
+#combinding apex and daily pH data
+Tempuse<- rbind(daily_calc.long5,averageT_values)
+
+#Adding Acclimation, Priming, recovery and Stress to the dataset
+Tempuse<- Tempuse %>%
+  mutate(Timepoint = case_when(
+    date >= as.Date('2024-06-26') & date <= as.Date('2024-07-08') ~ 'acclimation',
+    date >= as.Date('2024-07-09') & date <= as.Date('2024-07-24') ~ 'priming',
+    date >= as.Date('2024-07-25') & date <= as.Date('2024-08-06') ~ 'recovery',
+    date >= as.Date('2024-08-07') & date <= as.Date('2024-08-15') ~ 'stress',
+    TRUE ~ 'unknown'
+  ))
+
+#Plot showing the average total pH with only 4 treatments
+ggplot(Tempuse, aes(date, value, color = treatment))+
+  geom_line(size = 1)+
+  scale_color_manual(name = "Treatment", 
+                    values = c("lightblue", "darkblue", "red", "purple"))+
+  theme_classic()+
+    labs(x = "Date", y = "Average Temperature °C")
+ggsave(filename = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/average_temp_treatments.pdf", device = "pdf", width = 10, height = 10)
+
+
+#Plot showing the average total pH with only 4 treatments
+ggplot(Tempuse, aes(date, value, color = tank, fill= Timepoint))+
+  geom_line(size = 1)+
+  scale_y_continuous(limits = c(25, 33), breaks = seq(25, 33, by = 2))+
+  scale_color_manual(name = "Tank = Priming Treatment", 
+                    values = c("lightblue", "purple", "magenta", "blue", "darkblue", "red", "darkred"),
+                    labels = c("Acclimation", "2 = Low pH", "3 = Low pH", "4 = Control", "5 = Control", "6 = High Temp", "7 = High Temp")
+  )+
+  theme_classic()+
+    labs(x = "Date", y = "Average Temperature °C")
+ggsave(filename = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/average_temp_treatments2.pdf", device = "pdf", width = 10, height = 10)
 
 ```
 
@@ -201,6 +516,54 @@ daily_calc.long %>% filter(!is.na(value)) %>% ggplot(aes(x = date, y = value, co
 
 # Display the plot
 print(daily_treatment)
+
+```
+
+## Combining daily pH and temp tank measurements
+
+#Combining daily pH and temp
+
+```{r}
+
+#Combining tank temp values based on treatment
+df_summary_pH_tank_avg <- daily_calc.long2 %>%
+  mutate(tank_treatment = case_when(
+    tank_intial_treatment %in% c("4 control", "5 control") ~ "Tank_4_5",
+    tank_intial_treatment %in% c("6 heated", "7 heated") ~ "Tank_6_7",
+    tank_intial_treatment %in% c("2 low_ph", "3 low_ph") ~ "Tank_2_3",
+    TRUE ~ tank_intial_treatment  # Keep other tank groups unchanged
+  )) %>%
+  group_by(date, tank_treatment) %>%
+  summarize(
+    ph_mean = mean(value, na.rm = TRUE),
+    ph_se = sd(value, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
+  )
+
+
+#Combining tank pH values based on treatment and adding a treatment coloumn
+
+df_summary_pH_tank_avg <- phuse %>%
+  mutate(tank_treatment = case_when((
+    date >= as.Date("2024-07-10") & date <= as.Date("2024-08-06")) &
+      tank_intial_treatment %in% c("4 control", "5 control") ~ "Tank_4_5",
+    (date >= as.Date("2024-07-10") & date <= as.Date("2024-08-06")) &
+      tank_intial_treatment %in% c("6 heated", "7 heated") ~ "Tank_6_7",
+    (date >= as.Date("2024-07-10") & date <= as.Date("2024-08-06")) &
+      tank_intial_treatment %in% c("2 low_ph", "3 low_ph") ~ "Tank_2_3",
+    TRUE ~ tank_intial_treatment
+))%>%
+  group_by(date, tank_treatment) %>%
+  summarize(
+    ph_mean = mean(value, na.rm = TRUE),
+    ph_se = sd(value, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
+  )
+  mutate(Treatment= case_when( tank_treatment == "Tank_4_5" ~ "Control",
+                                    tank_treatment == "Tank_6_7" ~ "High Heat",
+                                    tank_treatment == "Tank_2_3" ~ "Low pH",
+                                    tank_treatment == "1 Acclimation" ~ "Acclimation"))
+
 
 ```
 

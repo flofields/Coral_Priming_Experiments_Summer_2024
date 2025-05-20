@@ -79,3 +79,32 @@ smpls%>%
   write_csv("output/physiology/Surface_Area/Surface_Area.csv")
 
 ```
+
+
+Plot
+```{r}
+sa <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv") %>% dplyr::rename(Sample.ID = Colony_id) %>% select(Sample.ID, surface.area.cm2)
+
+data <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/Coral_Fragment_Metadata1.csv")%>% dplyr::rename(Initial.Treatment = Inital.Treament)%>% select(Sample.ID, Secondary.Treatment, Inital.Treament)
+
+homog_volss <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Airbrushing_data.csv")%>% select(Species, Sample.ID)
+
+data <- data[, -c(1:4,6,9,10,11)]
+
+# Join homogenate volumes and surface area with sample metadata
+metadata <- full_join(data, sa)%>% full_join(homog_volss)%>%na.omit()
+
+```
+
+Calculate the mean and SE
+```{r}
+df_summary <- metadata %>%
+  group_by(Species, Treatmentstage,Priming_Treatment,Secondary.Treatment) %>%
+  summarize(
+    prot_mean = mean(prot_mg.cm2),
+    prot_se = sd(prot_mg.cm2) / sqrt(n())
+  )
+
+```
+
+

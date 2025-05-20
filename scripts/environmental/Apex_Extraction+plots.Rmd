@@ -17,7 +17,9 @@ library("XML")
 library("plyr")
 library("lubridate")
 library("dplyr")
-library(tidyr)
+library("tidyr")
+library("ggplot2")
+library(zoo)
 ```
 
 Set working directory
@@ -171,12 +173,18 @@ axis.POSIXct(side=1, Probe.Data$Date.Time)
 
 #Joining Data for one final graph
 ```{r setup, echo=FALSE}
-df1 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240824_Apex_Data_Output.csv")
-df2 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240725_Apex_Data_Output.csv")
+df1 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240815_Apex_Data_Output.csv")
+df2 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240824_Apex_Data_Output.csv")
+df3 <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/20240808_Apex_Data_Output.csv")
 
 df1 <- subset(df1, select = -...1)
-df_list<- list(df1,df2)
+df2 <- subset(df2, select = -...1)
+df3 <- subset(df3, select = -...1)
+df_list<- list(df1,df2,df3)
 df_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
+
+#Saving the merged data as a csv
+write.csv(df_merge, "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Merged_Apex_Data_Output.csv") 
 
 ```
 
@@ -184,9 +192,10 @@ df_merge <-Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
 Final plot with legend using the plot function
 
 ```{r setup, echo=FALSE}
-pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Graphs/Final2_Output.data.pdf")
-
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Graphs/Final_Output.data.pdf")
 par(mfrow=c(2,1))
+
+# First plot with multiple lines
 plot(as.numeric(as.character(CO2_HT_TMP)) ~ Date.Time, df_merge, col = "grey", type="l", ylim=c(20, 32),  xlab="Time", ylab="Temperature °C")
 lines(as.numeric(as.character(TMP_T2)) ~ Date.Time, df_merge, col = "red")
 lines(as.numeric(as.character(TMP_T3)) ~ Date.Time, df_merge, col = "blue")
@@ -247,6 +256,38 @@ ggplot(df_long, aes(x = Date.Time)) +
   theme(axis.text.x = element_text(angle=-40),legend.position = "top", 
         legend.text = element_text(size = 7),
         legend.title = element_text(size = 8))+
-  scale_color_manual(values = c("grey", "red", "blue", "black", "green", "purple", "orange"))+
+  scale_color_manual(values = c("grey", "red", "blue", "black", "green", "purple", "orange"))
   ggsave(path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Apex/Graphs", filename = "FinalpH.pdf")
 ```
+
+```{r}
+
+#Removing the noise from the temp graph
+
+df_long$Temperature_Smooth <- rollapply(as.numeric(as.character(df_long$Temperature)), width = 10, FUN = mean, fill = NA)
+
+ggplot(df_long, aes(x = Date.Time)) +
+  geom_line(aes(y = as.numeric(as.character(Temperature)), color = Temperature_Sensor), alpha = 0.5) + 
+  geom_smooth(aes(y = as.numeric(as.character(Temperature)), color = Temperature_Sensor), method = "loess", se = FALSE) +
+  labs(x = "Time", y = "Temperature °C") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = -40, hjust = 1),
+    legend.position = "top", 
+    legend.text = element_text(size = 7),
+    legend.title = element_text(size = 8)
+  ) +
+  scale_color_manual(values = c("grey", "red", "blue", "black", "green", "purple", "orange"))
+
+
+ggplot(df_long, aes(x = Date.Time)) +
+  geom_line(aes(y = as.numeric(as.character(pH)), color = pH_Sensor)) +
+  labs(x = "Time", y = "pH NBS") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=-40),legend.position = "top", 
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 8))+
+  scale_color_manual(values = c("grey", "red", "blue", "black", "green", "purple", "orange"))
+
+```
+

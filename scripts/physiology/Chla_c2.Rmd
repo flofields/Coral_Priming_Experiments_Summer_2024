@@ -52,6 +52,12 @@ library(cowplot)
 library(corrplot)
 library(lmerTest)
 library(scales)
+library(formattable)
+library(tidyr)
+library(purrr)
+library(readr)
+library(reshape2)
+library(car)
 
 ```
 
@@ -60,16 +66,16 @@ library(scales)
 
 # Define function to read in chl data
 read_chl <- function(file) {
-  chl_data <- read_csv(file, skip = 24, n_max = 24) %>%
-    select(-1) %>%
-    magrittr::set_colnames(c("row", 1:12, "wavelength")) %>%
-    fill(row) %>%
-    gather("col", "absorbance", -wavelength, -row) %>%
+  chl_data <- read_csv(file, skip = 24, n_max = 24)%>%
+    select(-1)%>%
+    magrittr::set_colnames(c("row", 1:12, "wavelength"))%>%
+    fill(row)%>%
+    gather("col", "absorbance", -wavelength, -row)%>%
     unite("well", c(row, col), sep = "")
 }
 
 # List chlorophyll data files
-chl_path <- "data/physiology/Chlorophyll/"                               # Path to chlorophyll data directory
+chl_path <- "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Chlorophyll/"                               # Path to chlorophyll data directory
 all_chl_files <- list.files(path = chl_path, pattern = "*.csv")          # List all files in directory
 chl_platemaps <- list.files(path = chl_path, pattern = "platemap")       # List platemap files
 chl_data_files <- setdiff(all_chl_files, chl_platemaps)                  # List absorbance data files
@@ -78,6 +84,12 @@ chl_data_files <- setdiff(all_chl_files, chl_platemaps)                  # List 
 df <- tibble(file = chl_data_files) %>%
   mutate(platemap = map(file, ~ read_csv(paste0(chl_path, tools::file_path_sans_ext(.), "_platemap.csv"))),
          chl_data = map(file, ~ read_chl(paste0(chl_path, .))))
+
+
+# Print the resulting tibble
+print(df)
+
+
 
 # Merge platemap and data for each plate
 df <- df %>%
@@ -122,24 +134,33 @@ homog.vol <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitH
 chl <- full_join(df1, homog.vol)
 
 # Load surface area
-sa <- read_csv("output/physiology/Surface_Area/Surface_Area.csv")%>%
+sa <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv")%>%
 rename(Fragment_ID = Colony_id)
-chl <- full_join(chl, sa)
+chl1 <- full_join(chl, sa)
 
 # Multiply chlorophyll by the homogenate volume and divide by surface area
-chl <- chl %>%
+chl1 <- chl1 %>%
   mutate(chla.ug.cm2 = chla.ug.ml * Homogenate.Vol / surface.area.cm2,
          chlc2.ug.cm2 = chlc2.ug.ml * Homogenate.Vol / surface.area.cm2)
 
 # write chlorophyll data to file and remove blanks and NAs
-chl1<- chl%>%
+chl1<- chl1%>%
   select(Fragment_ID, Species, Sample_date, Tank, chla.ug.cm2, chlc2.ug.cm2)%>%
   mutate(timepoint= case_when(                   #Adding the timepoint colunm corelating the timepoints with the sample dates 
-    Sample_date == "20240620" ~ "TP1",
-    Sample_date == "20240709" ~ "TP2",
-    Sample_date == "20240723" ~ "TP3",
-    Sample_date == "20240806" ~ "TP4",
-    Sample_date == "20240815" ~ "TP5"
+    Sample_date == "20240620" ~ "TP0",
+    Sample_date == "20240709" ~ "TP1",
+    Sample_date == "20240723" ~ "TP2",
+    Sample_date == "20240806" ~ "TP3",
+    Sample_date == "20240815" ~ "TP4"
+    ),
+    Treatment = case_when(
+      Tank == "2" ~ "Low_pH",
+    Tank == "3" ~ "Low_pH",
+    Tank == "4" ~ "Control",
+    Tank == "5" ~ "Control",
+    Tank == "6" ~ "High_Temp",
+    Tank == "7" ~ "High_Temp",
+    Tank == "acclimation" ~ "Acclimation"
     ),
     Colony = case_when(
       grepl("^DL-1($|-)", Fragment_ID) ~ 1,
@@ -152,137 +173,384 @@ chl1<- chl%>%
       grepl("^MD-5($|-)", Fragment_ID) ~ 3,
       TRUE ~ NA_integer_
                      ))%>%
-  filter(!is.na(chla.ug.cm2))%>%
-  write_csv(path = "output/physiology/chlorophyll/chlorophyll.csv")
+  filter(!is.na(chla.ug.cm2))
 ```
 
-# Plot results by species and colony and date
-```{r, eval = TRUE}
 
-# Plot chlorophyll a
+#Adding Secondary treatment info using the coral fragment metadata file
+```{r}
 
-chl1 %>%
-  ggplot(aes(x = timepoint , y = chla.ug.cm2, color = Species)) +
-  #facet_wrap(~species) +
-  labs(x = "", y = "chlorophyll c2 (µg/cm2)") +
-  geom_jitter(width = 0.1) +                                            # Plot all points
-  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
-               geom = "errorbar", color = "black", width = 0.5) +
-  stat_summary(fun.y = mean, geom = "point", color = "black")+
-  theme_classic() +
-   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_1.pdf", device = "pdf", width = 10, height = 10)
+frag_meta <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Coral_Fragment_Metadata.csv") %>%
+  mutate(Sample.ID = gsub("_", "-", Sample.ID))%>%
+  write_csv(frag_meta, path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/Coral_Fragment_Metadata1.csv" )
 
-##OPTION2
+frag_meta <- frag_meta%>%
+  select(Sample.ID, Inital.Treament, Secondary.Treatment)%>%
+  rename(Inital.Treatment = Inital.Treament)%>%
+  rename(Fragment_ID = Sample.ID)
 
-ggplot(chl1, aes(x = timepoint, y = chla.ug.cm2, color = Species)) +
-  facet_wrap(~Colony) +
-  labs(x = "", y = "chlorophyll a (µg/cm2)") +
-  geom_jitter(width = 0.1) +                                            # Plot all points
-  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
-               geom = "errorbar", color = "black", width = 0.5) +
-  stat_summary(fun.y = mean, geom = "point", color = "black") +
-  theme_classic() +
-  theme(
-    panel.border = element_rect(colour = "black", fill = NA, size = 1),
-    strip.background = element_rect(colour = "black", fill = "white"),
-    panel.spacing = unit(1, "lines"),  # Add spacing between facets
-    panel.grid.major = element_blank(), # Remove major grid lines
-    panel.grid.minor = element_blank(), # Remove minor grid lines
-    strip.text = element_text(face = "bold")  # Make facet labels bold
-  ) +
-  theme(
-    strip.placement = "outside", # Position facet labels outside the panels
-    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
-  ) +
-   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_2.pdf", device = "pdf", width = 10, height = 10)
+chl2 <- left_join (chl1, frag_meta, by = "Fragment_ID")
 
-##Note i should be making the plot a dataframe then saving using the code below but although I recieved an error message it worked so no need to change it.
-#ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chla_2.pdf", plot = p, device = "pdf", width = 10, height = 10)
 
-# Plot chlorophyll c2
-chl1 %>%
-  ggplot(aes(x = timepoint , y = chlc2.ug.cm2, color = Species)) +
-  #facet_wrap(~species) +
-  labs(x = "", y = "chlorophyll c2 (µg/cm2)") +
-  geom_jitter(width = 0.1) +                                            # Plot all points
-  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
-               geom = "errorbar", color = "black", width = 0.5) +
-  stat_summary(fun.y = mean, geom = "point", color = "black")+
+chl2<- chl2%>%
+  select(Fragment_ID, Species, Sample_date, Tank, chla.ug.cm2, chlc2.ug.cm2, timepoint, Treatment, Secondary.Treatment, Colony)%>%
+rename(Inital.Treatment = Treatment)
+
+  
+# Print the updated data frame
+print(chl2)
+
+write_csv(chl2, path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/chlorophyll.csv")
+
+#Removing timepoints 0 and 1
+chl3 <- chl2 %>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1")
+
+```
+
+Checking for outliers 
+```{r}
+
+#Check and remove outliers in colunm chla.ug.cm2
+
+# Calculate the IQR
+Q1 <- quantile(chl3$chla.ug.cm2, 0.25)
+Q3 <- quantile(chl3$chla.ug.cm2, 0.75)
+IQR <- Q3 - Q1
+
+# Identify outliers
+outliers <- chl3$chla.ug.cm2[(chl3$chla.ug.cm2 < (Q1 - 1.5 * IQR)) | (chl3$chla.ug.cm2 > (Q3 + 1.5 * IQR))]
+print(outliers)
+
+chl3 <- chl3 %>%
+  filter(!(chla.ug.cm2 %in% outliers))
+
+#Check and remove outliers in colunm chlc2.ug.cm2
+
+Q1 <- quantile(chl3$chlc2.ug.cm2, 0.25)
+Q3 <- quantile(chl3$chlc2.ug.cm2, 0.75)
+IQR <- Q3 - Q1
+
+outliers <- chl3$chlc2.ug.cm2[(chl3$chlc2.ug.cm2 < (Q1 - 1.5 * IQR)) | (chl3$chlc2.ug.cm2 > (Q3 + 1.5 * IQR))]
+print(outliers)
+
+chl3 <- chl3 %>%
+  filter(!(chlc2.ug.cm2 %in% outliers))
+
+```
+
+
+#Standard error calculations
+```{r}
+#For visualization purposes there will be 2 seperate datasets, one with just initial treatment, another with secondary treatment 
+
+# Calculate the standard error for each species and timepoint with initial treatment
+df_summary <- chl3 %>%
+  group_by(Species, timepoint, Inital.Treatment,Tank, Sample_date) %>%
+  summarize(
+    chla_mean = mean(chla.ug.cm2),
+    chla_se = sd(chla.ug.cm2) / sqrt(n()),
+    chlc2_mean = mean(chlc2.ug.cm2),
+    chlc2_se = sd(chlc2.ug.cm2) / sqrt(n())
+  )
+# Calculate the standard error for each species and timepoint with initial and secondary treatment, without TP0 and acclimation
+
+df_summary2 <- chl3 %>%
+ # filter(!grepl("NONE", Secondary.Treatment))%>%
+  group_by(Species, timepoint, Inital.Treatment, Secondary.Treatment,Tank,Sample_date) %>%
+  summarize(
+    chla_mean = mean(chla.ug.cm2),
+    chla_se = sd(chla.ug.cm2) / sqrt(n()),
+    chlc2_mean = mean(chlc2.ug.cm2),
+    chlc2_se = sd(chlc2.ug.cm2) / sqrt(n())
+  )
+
+print(df_summary2)
+
+#Only Madracis decactis
+df_summary3 <- df_summary2 %>%
+  filter(!grepl("Diploria labrinthiformis", Species))
+
+#Only Diploria labrinthiformis
+df_summary4 <- df_summary2 %>%
+  filter(!grepl("Madracis decactis", Species))
+
+#Averaging treatment groups in Timepoint 2 and 3
+
+
+df_summary2_avg <- df_summary2 %>%
+  mutate(Tank_Group = case_when(
+    Tank %in% c(2, 3) ~ "Tank_2_3",
+    Tank %in% c(4, 5) ~ "Tank_4_5",
+    Tank %in% c(6, 7) ~ "Tank_6_7",
+    TRUE ~ as.character(Tank)
+  )) %>%
+  group_by(Species, timepoint, Inital.Treatment, Secondary.Treatment, Tank_Group) %>%
+  summarize(
+    chla_mean = mean(chla_mean), 
+    chla_se = sqrt(sum(chla_se^2)/n()),
+    chlc2_mean = mean(chlc2_mean), 
+    chlc2_se = sqrt(sum(chlc2_se^2)/n()),
+    .groups = "drop"
+  )
+write_csv(df_summary2_avg, path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/chlorophylldfsummary2_avg.csv")
+```
+
+#Including a column that includes the treatment stage (Priming, recovery and Stress)
+```{r}
+df_summary2_avg<- df_summary2_avg%>%
+  mutate(TreatmentStage= case_when( timepoint == "TP2" ~ "Priming",
+                                    timepoint == "TP3" ~ "Recovery",
+                                    timepoint == "TP4" ~ "Stress"))
+
+```
+
+```{r}
+# Generate the plot Chla using the means
+
+df_summary2_avg$SecondaryColor <- ifelse(df_summary2_avg$timepoint == "TP4", df_summary2_avg$Secondary.Treatment, NA)
+
+
+
+ggplot(df_summary2_avg, aes(x = Inital.Treatment, y = chla_mean, color = Inital.Treatment, fill = SecondaryColor)) +
+  geom_errorbar(aes(ymin = chla_mean - chla_se, ymax = chla_mean + chla_se), 
+                width = 0.2, position = position_dodge(width = 0.75)) +
+  geom_point(position = position_dodge(width = 0.75), shape = 21, size = 3) +
+  facet_grid(Species ~ TreatmentStage) +
   theme_classic()+
-   ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chlac2_1.pdf", device = "pdf", width = 10, height = 10)
+  scale_color_manual(
+    name = "Initial Treatment",
+    values = c("Control" = "lightblue", "High_Temp" = "red", "Low_pH" = "purple")) +
+  scale_fill_manual(
+    name = "Secondary Color",
+    values = c("Control" = "blue", "High_Temp" = "darkred", "NA" = "grey")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.spacing = unit(0.3, "lines"),
+     panel.border = element_rect(color = "black", fill = NA)  )+
+  labs(x = "Initial Treatment", y = expression("Average Chlorophyll a (µg/cm"^2*")"))+
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/Chla3.pdf", device = "pdf", width = 8, height = 6)
 
-###OPTION 2
-
-
-ggplot(chl1, aes(x = timepoint, y = chlc2.ug.cm2, color = Species)) +
-  facet_wrap(~Colony) +
-  labs(x = "", y = "chlorophyll a (µg/cm2)") +
-  geom_jitter(width = 0.1) +                                            # Plot all points
-  stat_summary(fun.data = mean_cl_normal, fun.args = list(mult = 1),    # Plot standard error
-               geom = "errorbar", color = "black", width = 0.5) +
-  stat_summary(fun.y = mean, geom = "point", color = "black") +
-  theme_classic() +
-  theme(
-    panel.border = element_rect(colour = "black", fill = NA, size = 1),
-    strip.background = element_rect(colour = "black", fill = "white"),
-    panel.spacing = unit(1, "lines"),  # Add spacing between facets
-    panel.grid.major = element_blank(), # Remove major grid lines
-    panel.grid.minor = element_blank(), # Remove minor grid lines
-    strip.text = element_text(face = "bold")  # Make facet labels bold
-  ) +
-  theme(
-    strip.placement = "outside", # Position facet labels outside the panels
-    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
-  )+
-  ggsave(filename = "output/physiology/chlorophyll/Species_and_colony_Chlac2_2.pdf", device = "pdf", width = 10, height = 10)
-```
-
-# Calculate the mean at each tmepoint and each species 
-```{r, eval = TRUE}
-
-mean_datachl <- chl1 %>%
-  group_by(timepoint, Species, Colony) %>%
-  summarize(mean_chla = mean(chla.ug.cm2, na.rm = TRUE),
-            mean_chlc2 = mean(chlc2.ug.cm2, na.rm = TRUE))
-
-
-
-mean_datachl_long <- mean_datachl %>%
-  pivot_longer(cols = c(mean_chla, mean_chlc2), 
-               names_to = "variable", 
-               values_to = "value")
-
-#Maybe do some line graphs with this
 
 ```
 
-
-# Statistical Test
+#PLOT chlc2 
 ```{r}
-## Test for differences in salinity by treatment with one-way ANOVA
-res.aov <- aov(Salinity ~ PrimingTreatment, data = carb_output3)
-summary(res.aov)
-TukeyHSD(res.aov) # See if there is any differences between specific treatments 
-plot(res.aov, 1) # Check ANOVA assumptions of normality 
-leveneTest(Salinity ~ PrimingTreatment, data = carb_output3) # Check ANOVA assumptions of homogenity of variance   
-
+#Generate the plot Chlc2 using means
+ggplot(df_summary2_avg, aes(x = Inital.Treatment, y = chlc2_mean, color = Inital.Treatment, fill = SecondaryColor)) +
+  geom_errorbar(aes(ymin = chlc2_mean - chlc2_se, ymax = chlc2_mean + chlc2_se), 
+                width = 0.2, position = position_dodge(width = 0.75)) +
+  geom_point(position = position_dodge(width = 0.75), shape = 21, size = 3) +
+  facet_grid(Species ~ TreatmentStage) +
+  theme_classic()+
+  scale_color_manual(
+    name = "Initial Treatment",
+    values = c("Control" = "lightblue", "High_Temp" = "red", "Low_pH" = "purple")) +
+  scale_fill_manual(
+    name = "Secondary Color",
+    values = c("Control" = "blue", "High_Temp" = "darkred", "NA" = "grey")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.spacing = unit(0.3, "lines"),
+     panel.border = element_rect(color = "black", fill = NA)  )+
+  labs(x = "Initial Treatment", y = expression("Average Chlorophyll C2 (µg/cm"^2*")"))+
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/Chlc2-3.pdf", device = "pdf", width = 8, height = 6)
 
 ```
+TP2D<-TP2%>%filter(Species != "Madracis decactis")
 
-Adding statistical significance to graphs
+
+
+
+# Statistical Test within timepoints 
+#TP2 = Priming
 ```{r}
-# Example significance data frame
-signif_data <- data.frame(
-  timepoint = c("TP1", "TP2", "TP3"),  # Timepoints where significance is detected
-  Species = c("Species1", "Species1", "Species2"),  # Corresponding species
-  y_position = c(5, 6, 7),  # Adjust this to be above the highest data point
-  label = c("***", "**", "*")  # Significance stars
-)
+
+##Separating time points to test individually 
+
+TP2<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP3",
+         timepoint !="TP4")
+
+## Test for differences in TP2 for chla and chlc2, treatment and species with a two-way ANOVA
+
+model <- aov(chla.ug.cm2 ~ Inital.Treatment*Species, data = TP2)
+summary(model)
+
+#Df Sum Sq Mean Sq F value Pr(>F)
+#Inital.Treatment          2  1.132  0.5659   1.269  0.292
+#Species                   1  0.113  0.1129   0.253  0.618
+#Inital.Treatment:Species  2  0.022  0.0108   0.024  0.976
+#Residuals                41 18.289  0.4461    
+
+#There is no significant effect of initial treatment on chla or between species at during priming
+
+TukeyHSD(model) # See if there is any differences between specific treatments 
+plot(model, 1) # Check ANOVA assumptions of normality 
+
+leveneTest(chla.ug.cm2 ~ Inital.Treatment, data = TP2) # Check ANOVA assumptions of homogenity of variance  
+
+#Df F value Pr(>F)
+#group  2   0.118  0.889
+#      44   
+
+interaction.plot(TP2$Inital.Treatment, TP2$Species, TP2$chla.ug.cm2)
+#The interaction plot shows no interaction effect
+
+model <- aov(chlc2.ug.cm2 ~ Inital.Treatment*Species, data = TP2)
+summary(model)
+
+#                         Df Sum Sq Mean Sq F value Pr(>F)
+#Inital.Treatment          2 0.0542 0.02711   0.649  0.528
+#Species                   1 0.0065 0.00651   0.156  0.695
+#Inital.Treatment:Species  2 0.0089 0.00443   0.106  0.900
+#Residuals                41 1.7117 0.04175  
+
+#No significant effect of initial treatment between species on chlc2 during priming
+
+TukeyHSD(model) # See if there is any differences between specific treatments 
+
+plot(model, 1) # Check ANOVA assumptions of normality 
+
+leveneTest(chlc2.ug.cm2 ~ Inital.Treatment, data = TP2) # Check ANOVA assumptions of homogenity of variance   
+
+#Df F value Pr(>F)
+#group  2  0.9097 0.4101
+#      44 
+
+interaction.plot(TP2$Inital.Treatment, TP2$Species, TP2$chlc2.ug.cm2)
+#The interaction plot shows an interaction effect in response to low pH, meaning different species respond differently to low pH
+```
+
+#TP3 = Recovery
+```{r}
+TP3<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP2",
+         timepoint !="TP4")
+
+model <- aov(chla.ug.cm2 ~ Inital.Treatment*Species, data = TP3)
+summary(model)
+
+#                         Df Sum Sq Mean Sq F value Pr(>F)
+#Inital.Treatment          2  0.198 0.09914   0.474  0.626
+#Species                   1  0.031 0.03051   0.146  0.704
+#Inital.Treatment:Species  2  0.589 0.29473   1.410  0.255
+#Residuals                43  8.988 0.20902     
+
+#There is no significant effect of initial treatment on chla or between species at during Recovery
+
+TukeyHSD(model) 
+plot(model, 1)  
+
+leveneTest(chla.ug.cm2 ~ Inital.Treatment, data = TP3)
+
+#Df F value Pr(>F)
+#group  2  1.2151  0.306
+#      46 
+
+interaction.plot(TP3$Inital.Treatment, TP3$Species, TP3$chla.ug.cm2)
+#lines cross or diverge, suggesting an interaction effect, meaning different the two species respond differently to the treatments.
 
 
+model <- aov(chlc2.ug.cm2 ~ Inital.Treatment*Species, data = TP3)
+summary(model)
 
-ggplot(chl, aes(timepoint, chlc2.ug.cm2))
+#                        Df Sum Sq Mean Sq F value Pr(>F)
+#Inital.Treatment          2 0.0517 0.02585   0.982  0.383
+#Species                   1 0.0065 0.00646   0.245  0.623
+#Inital.Treatment:Species  2 0.0848 0.04239   1.610  0.212
+#Residuals                43 1.1319 0.02632 
 
+#Significant effect of initial treatment between species on chlc2 during priming
+
+TukeyHSD(model) # See if there is any differences between specific treatments 
+
+plot(model, 1) # Check ANOVA assumptions of normality 
+
+leveneTest(chlc2.ug.cm2 ~ Inital.Treatment, data = TP3) 
+
+#     Df F value Pr(>F)
+#group  2  0.4627 0.6325
+#      46
+
+interaction.plot(TP3$Inital.Treatment, TP3$Species, TP3$chlc2.ug.cm2)
+#lines cross or diverge, suggesting an interaction effect, meaning different the two species respond differently to the treatments.
 
 ```
 
+#TP4 = Stress
+```{r}
+TP4<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP2",
+         timepoint !="TP3")
+
+model <- aov(chla.ug.cm2 ~ Secondary.Treatment*Species, data = TP4)
+summary(model)
+#                            Df Sum Sq Mean Sq F value   Pr(>F)    
+#Secondary.Treatment          1  1.538  1.5378  12.121 0.000749 ***
+#Species                      1  1.398  1.3984  11.022 0.001270 ** 
+#Secondary.Treatment:Species  1  0.166  0.1656   1.305 0.256066    
+#Residuals                   97 12.307  0.1269   
+
+#Statistical effect seen between chla and species
+
+TukeyHSD(model)  
+plot(model, 1) 
+
+leveneTest(chla.ug.cm2 ~ Secondary.Treatment, data = TP4) 
+#Df F value  Pr(>F)  
+#group  1  0.4505 0.5037
+#      99               
+
+interaction.plot(TP4$Secondary.Treatment, TP4$Species, TP4$chla.ug.cm2)
+
+
+model <- aov(chlc2.ug.cm2 ~ Secondary.Treatment*Species, data = TP4)
+summary(model)
+
+#                            Df Sum Sq Mean Sq F value   Pr(>F)    
+#Secondary.Treatment          1 0.0662 0.06618   4.658   0.0334 *  
+#Species                      1 0.2663 0.26631  18.745 3.64e-05 ***
+#Secondary.Treatment:Species  1 0.0009 0.00089   0.063   0.8028    
+#Residuals                   97 1.3781 0.01421  
+
+
+TukeyHSD(model) # See if there is any differences between specific treatments 
+plot(model, 1) # Check ANOVA assumptions of normality 
+leveneTest(chlc2.ug.cm2 ~ Secondary.Treatment, data = TP4) 
+
+# Df F value Pr(>F)
+#group  1  0.0052 0.9426
+#      99 
+
+interaction.plot(TP4$Inital.Treatment, TP4$Species, TP4$chlc2.ug.cm2)
+#Interaction effect
+```
+
+#Between Timepoints
+```{r}
+model <- aov(chla.ug.cm2~Inital.Treatment*Secondary.Treatment*Species, data = chl3)
+summary(model)
+```
+
+```{r}
+TukeyHSD(model)  
+plot(model, 1) 
+interaction.plot(chl3$Secondary.Treatment, chl3$Species, chl3$chlc2.ug.cm2)
+
+```
+```{r}
+model <- aov(chlc2.ug.cm2~Inital.Treatment*Secondary.Treatment*Species, data = chl3)
+summary(model)
+
+```
+```{r}
+TukeyHSD(model)  
+plot(model, 1) 
+interaction.plot(chl3$Secondary.Treatment, chl3$Species, chl3$chla.ug.cm2)
+```

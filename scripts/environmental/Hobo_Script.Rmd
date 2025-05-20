@@ -142,30 +142,34 @@ ggplot(df_merge, aes(x = Date.time, y=Temperature, color= tank)) +
   
 ```
 
-
-# List of data frames to merge
-df_list <- list(df1, df2, df3)
-
-# Merge all data frames in the list by "Date.time"
-df_merge <- Reduce(function(x, y) merge(x, y, by = "Date.time"), df_list)
-
-# View the merged data frame
-print(df_mergee)
-
-
-
-ggplot(df_mergee, aes(x = Date.time, y = Temperature)) +
-  geom_point(aes(color = tank),size=.5) +
-  facet_wrap(~ tank, scales = "free_y") +
-  labs(x = "Time", y = "Temperature") +
+```{r}
+ggplot(df_merge, aes(x = Date.time)) +
+  geom_line(aes(y = as.numeric(as.character(Temperature)), color = tank)) +
+  geom_smooth(aes(y = as.numeric(as.character(Temperature)), color = tank), method = "loess", se = FALSE) +
+  labs(x = "Time", y = "Temperature °C") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = -40), 
-        legend.position = "top", 
+  theme(axis.text.x = element_text(angle=-40),legend.position = "top", 
         legend.text = element_text(size = 7),
-        legend.title = element_text(size = 8)) +
-  scale_color_manual(values = c("red", "blue", "green", "purple", "orange"))
+                                   legend.title = element_text(size = 8))
+```
 
-  ggsave(path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/environmental/Hobo", filename = "FinalHobotemp.pdf")
-#This isn't working, need to fix this 
+
+```{r}
+library(zoo)
+# Calculate the rolling mean
+df_merge$Temperature_Smooth <- rollapply(as.numeric(as.character(df_merge$Temperature)), width = 10, FUN = mean, fill = NA)
+
+ggplot(df_merge, aes(x = Date.time)) +
+  geom_line(aes(y = Temperature_Smooth, color = tank)) +
+  labs(x = "Time", y = "Temperature °C") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = -40, hjust = 1),
+    legend.position = "top", 
+    legend.text = element_text(size = 7),
+    legend.title = element_text(size = 8)
+  ) +
+  scale_color_manual(values = c("grey", "darkred", "blue", "black", "darkgreen", "purple", "darkorange"))
+
 ```
 

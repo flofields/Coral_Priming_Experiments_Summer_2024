@@ -54,9 +54,9 @@ library(purrr)
 ## Set working directory and get the file path
 ```{r, warning = FALSE}
 
-setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use")
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/")
 
-path.p<-"20240708_09"
+path.p<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240708_09"
 
 getwd()
 ```
@@ -72,10 +72,10 @@ file.names <- file.names[!grepl("metadata", file.names)]
 SA <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv", header=T)
 
 # Load sample metadata
-Sample.Info <- read.csv(file="20240708_09/pr_sample_metadata.csv", header=T) #read in sample.info data
+Sample.Info <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240708_09/pr_sample_metadata.csv", header=T) #read in sample.info data
 
 # Load run metadata
-run.info <- read_csv(file = "20240708_09/pr_run_metadata.csv")
+run.info <- read_csv(file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240708_09/pr_run_metadata.csv")
 ```
 
 ##Formating dataset for script
@@ -234,15 +234,15 @@ Resp <- pr %>%
 
 Photo <- na.omit(Photo) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
 #colnames(Photo)[1] <- "sample.id"
-Photo$Timepoint <- "Week5"
+Photo$Timepoint <- "Week1"
 Photo$measure <- "Photo"
 Resp <- na.omit(Resp) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
 #colnames(Resp)[1] <- "sample.id"
-Resp$Timepoint <- "Week5"
+Resp$Timepoint <- "Week1"
 Resp$measure <- "Resp"
 
-write.csv(Photo, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week5.csv")
-write.csv(Resp, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week5.csv")
+write.csv(Photo, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week1.csv")
+write.csv(Resp, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week1.csv")
 ```
 
 ```{r}
@@ -257,7 +257,7 @@ df_mean_Resp <- Resp %>%
 
 
 # Visualize data
-pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Resp_Week5.pdf", width=6, height=6)
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Resp_Week1.pdf", width=6, height=6)
 r_plot<-df_summary_Resp %>%
     ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
     geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
@@ -287,7 +287,267 @@ df_mean_Photo <- Photo %>%
 
 
 # Visualize data
-pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Photo_Week5.pdf", width=6, height=6)
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Photo_Week1.pdf", width=6, height=6)
+r_plot<-df_summary_Photo %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Photo, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+```
+
+#Week 2 of PR- July 16 -July 17 2024
+## Set working directory and get the file path
+```{r, warning = FALSE}
+
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/")
+
+path.p<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240716_17"
+
+getwd()
+```
+
+### Import data files
+```{r, warning = FALSE}
+#list all csv file names
+file.names<-basename(list.files(path = path.p, pattern = "csv$", recursive = TRUE))
+# omit metadata from files to be read in as data
+file.names <- file.names[!grepl("metadata", file.names)]   
+
+# Load Surface area
+SA <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv", header=T)
+
+# Load sample metadata
+Sample.Info <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240716_17/pr_sample_metadata.csv", header=T) #read in sample.info data
+
+# Load run metadata
+run.info <- read_csv(file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240716_17/pr_run_metadata.csv")
+```
+
+##Formating dataset for script
+```{r, warning = FALSE}
+# Join run and sample metadta first by sample id
+
+colnames(SA)[colnames(SA) == "Colony_id"] <- "sample.id" #changing the column name in SA to match the sample metadata column name
+metadata <- full_join(Sample.Info, run.info)%>%
+  mutate(Date = as_date(as.character(Date), format = "%Y%m%d", tz = ""))
+
+
+# Select only certain columnns
+metadata <- metadata %>%
+  select(sample.id, Run, Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Percent, Temp.Cat)
+
+# Read in all data files
+#edit sample.id name to remove .csv and the date from files
+df <- tibble(file.name = file.names) %>%
+  mutate(sample.id = gsub("_.*", "", file.name))%>%  # Get sample from filename and select for info before the first _
+  mutate(sample.id = gsub(".csv", "", sample.id),  #remove .csv from sample.id
+          info = map(sample.id, ~filter(metadata, sample.id == .)),           # Get associated sample info
+         data0 = map(file.name, ~read_csv(file.path(path.p, .), skip = 1, col_types = cols(.default = "d", Time = "t"))))   # Get associated O2 data
+
+# Select only Time, Value, and Temp columns from O2 data
+df <- df %>%
+  mutate(data0 = map(data0, ~select(., Time, Value, Temp)))%>%
+  mutate(data0 = map(data0, ~(.x %>% filter(complete.cases(.))))) #remove NAs 
+
+```
+
+## Use the time breaks in the sample info to link O2 data with light levels
+```{r, warning = FALSE}
+df <- df %>%
+  mutate(intervals = map2(data0, info, function(.x, .y) {
+    split(.x, f = cut(as.numeric(.x$Time), breaks = as.numeric(c(.y$Start.time, last(.y$Stop.time))),
+                      labels = as.character(.y$Light_Percent)))})) %>%
+  mutate(data = map(intervals, ~ unnest(tibble(.), .id = "Light_Percent")))
+
+## 'data' now contains the O2 data with the corresponding light level as another column
+## Example of what 'data' for each sample looks like:
+# df$data[[1]]
+
+```
+
+
+## Thin data
+```{r, fig.height = 8, fig.width = 8}
+# Set thinning parameter
+thin_par <- 20
+
+# Thin data for all samples
+df <- df %>%
+  mutate(thin_data = map(data, ~ slice(., seq(1, nrow(.), thin_par))))
+
+
+# Create plots for full dataset and thinned data
+df <- df %>%
+  mutate(data_plot = map2(data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)),
+    thin_data_plot = map2(thin_data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)))
+
+# Example of plots
+cowplot::plot_grid(df$data_plot[[1]], df$thin_data_plot[[1]], nrow = 2,
+                   labels = c("Example plot: all data", "Example plot: thinned data"))
+
+
+
+```
+
+## The full or thinned data plot for any sample can be accessed like this:
+```{r, warning = FALSE}
+df %>%
+  filter(sample.id == "DL-2-18") %>%
+  pull(thin_data_plot)
+```
+
+# Fit regressions to each interval for each sample
+```{r, warning = FALSE}
+# Define function for fitting LoLinR regressions to be applied to all intervals for all samples
+fit_reg <- function(df) {
+  rankLocReg(xall = as.numeric(df$Time), yall = df$Value, 
+             alpha = 0.2, method = "pc", verbose = FALSE)
+}
+
+# Setup for parallel processing
+plan(multisession)
+
+# Map LoLinR function onto all intervals of each sample's thinned dataset
+df <- df %>%
+  mutate(regs = furrr::future_map(thin_data, function(.) {       # future_map executes function in parallel
+    group_by(., Light_Percent) %>%
+    do(rankLcRg = fit_reg(.))
+  }))
+
+
+## Now 'regs' contains the fitted local regressions for each interval of each sample's thinned dataset
+
+# Define function to pull out and plot regression diagnostics
+plot_rankLcRg <- function(sample.id, interval_number) {
+  df1 %>%
+    filter(sample.id == sample.id) %>%
+    pluck("regs", 1, "rankLcRg", interval_number) %>%
+    plot()
+}
+```
+## Extract slope of best regression for each interval for each sample
+```{r}
+df.out <- df %>% 
+  unnest(regs) %>%
+  mutate(micromol.L.s = map_dbl(rankLcRg, ~ pluck(., "allRegs", "b1", 1)))
+```
+
+## Adjust by chamber volume and normalize to surface area
+```{r}
+### Merge rates with sample info
+pr <- left_join(
+  select(df.out, sample.id, Light_Percent, micromol.L.s),
+  distinct(metadata, sample.id, Treatment, Run, Chamber.Vol.L, Date)
+)
+
+## Correct for chamber volume and blanks
+pr <- pr %>%
+  mutate(micromol.s = micromol.L.s * Chamber.Vol.L)
+
+# Get blank values -- average for each run and light value in case multiple blanks
+blanks <- pr %>%
+  filter(grepl("BLANK", sample.id)) %>%
+  group_by(Run, Light_Percent) %>%
+  summarise(micromol.s.blank = mean(micromol.s))
+
+# Join blank values with rest of data and subtract values from samples for same run and light value
+pr <- left_join(pr, blanks) %>%
+  mutate(micromol.s.adj = micromol.s - micromol.s.blank) %>%
+  # After correcting for blank values, remove blanks from data
+  filter(!grepl("BLANK", sample.id))
+
+# Join surface area with rest of data
+pr <- left_join(pr, select(SA, sample.id, surface.area.cm2))
+
+# Normalize rates by surface area
+pr <- pr %>%
+  mutate(micromol.cm2.s = micromol.s.adj / surface.area.cm2,
+         micromol.cm2.h = micromol.cm2.s * 3600)
+
+Photo <- pr %>%
+  filter(Light_Percent ==331)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Resp <- pr %>%
+  filter(Light_Percent ==0)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Photo <- na.omit(Photo) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Photo)[1] <- "sample.id"
+Photo$Timepoint <- "Week2"
+Photo$measure <- "Photo"
+Resp <- na.omit(Resp) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Resp)[1] <- "sample.id"
+Resp$Timepoint <- "Week2"
+Resp$measure <- "Resp"
+
+write.csv(Photo, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week2.csv")
+write.csv(Resp, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week2.csv")
+```
+
+```{r}
+
+df_summary_Resp <- Resp %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Resp <- Resp %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Resp_Week1.pdf", width=6, height=6)
+r_plot<-df_summary_Resp %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Resp, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+df_summary_Photo <- Photo %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Photo <- Photo %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Photo_Week1.pdf", width=6, height=6)
 r_plot<-df_summary_Photo %>%
     ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
     geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
@@ -310,15 +570,14 @@ if (dev.cur() > 1) {
 ```
 
 
-
-#Week 5 of PR- August 05 - August 06 2024
+#Week 3 of PR- July22 - July23 2024
 
 ## Set working directory and get the file path
 ```{r, warning = FALSE}
 
 setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use")
 
-path.p<-"20240805_06"
+path.p<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240722_23"
 
 getwd()
 ```
@@ -334,10 +593,529 @@ file.names <- file.names[!grepl("metadata", file.names)]
 SA <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv", header=T)
 
 # Load sample metadata
-Sample.Info <- read.csv(file="20240805_06/pr_sample_metadata.csv", header=T) #read in sample.info data
+Sample.Info <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240722_23/pr_sample_metadata.csv", header=T) #read in sample.info data
 
 # Load run metadata
-run.info <- read_csv(file = "20240805_06/pr_run_metadata.csv")
+run.info <- read_csv(file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240722_23/pr_run_metadata.csv")
+```
+
+#Formating dataset for script
+```{r, warning = FALSE}
+# Join run and sample metadta first by sample id
+
+colnames(SA)[colnames(SA) == "Colony_id"] <- "sample.id" #changing the column name in SA to match the sample metadata column name
+metadata <- full_join(Sample.Info, run.info)%>%
+  mutate(Date = as_date(as.character(Date), format = "%Y%m%d", tz = ""))
+
+
+# Select only certain columnns
+metadata <- metadata %>%
+  select(sample.id, Run, Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Percent, Temp.Cat)
+
+# Read in all data files
+#edit sample.id name to remove .csv and the date from files
+df <- tibble(file.name = file.names) %>%
+  mutate(sample.id = gsub("_.*", "", file.name))%>%  # Get sample from filename and select for info before the first _
+  mutate(sample.id = gsub(".csv", "", sample.id),  #remove .csv from sample.id
+          info = map(sample.id, ~filter(metadata, sample.id == .)),           # Get associated sample info
+         data0 = map(file.name, ~read_csv(file.path(path.p, .), skip = 1, col_types = cols(.default = "d", Time = "t"))))   # Get associated O2 data
+
+# Select only Time, Value, and Temp columns from O2 data
+df <- df %>%
+  mutate(data0 = map(data0, ~select(., Time, Value, Temp)))%>%
+  mutate(data0 = map(data0, ~(.x %>% filter(complete.cases(.))))) #remove NAs 
+
+```
+
+## Use the time breaks in the sample info to link O2 data with light levels
+```{r, warning = FALSE}
+df <- df %>%
+  mutate(intervals = map2(data0, info, function(.x, .y) {
+    split(.x, f = cut(as.numeric(.x$Time), breaks = as.numeric(c(.y$Start.time, last(.y$Stop.time))),
+                      labels = as.character(.y$Light_Percent)))})) %>%
+  mutate(data = map(intervals, ~ unnest(tibble(.), .id = "Light_Percent")))
+
+## 'data' now contains the O2 data with the corresponding light level as another column
+## Example of what 'data' for each sample looks like:
+# df$data[[1]]
+
+```
+
+
+## Thin data
+```{r, fig.height = 8, fig.width = 8}
+# Set thinning parameter
+thin_par <- 20
+
+# Thin data for all samples
+df <- df %>%
+  mutate(thin_data = map(data, ~ slice(., seq(1, nrow(.), thin_par))))
+
+# Create plots for full dataset and thinned data
+df <- df %>%
+  mutate(data_plot = map2(data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)),
+    thin_data_plot = map2(thin_data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)))
+
+# Example of plots
+cowplot::plot_grid(df$data_plot[[1]], df$thin_data_plot[[1]], nrow = 2,
+                   labels = c("Example plot: all data", "Example plot: thinned data"))
+
+
+
+```
+
+## The full or thinned data plot for any sample can be accessed like this:
+```{r, warning = FALSE}
+df %>%
+  filter(sample.id == "MD-1-12") %>%
+  pull(thin_data_plot)
+```
+
+# Fit regressions to each interval for each sample
+```{r, warning = FALSE}
+# Define function for fitting LoLinR regressions to be applied to all intervals for all samples
+fit_reg <- function(df) {
+  rankLocReg(xall = as.numeric(df$Time), yall = df$Value, 
+             alpha = 0.2, method = "pc", verbose = FALSE)
+}
+
+# Setup for parallel processing
+plan(multisession)
+
+# Map LoLinR function onto all intervals of each sample's thinned dataset
+df <- df %>%
+  mutate(regs = furrr::future_map(thin_data, function(.) {       # future_map executes function in parallel
+    group_by(., Light_Percent) %>%
+    do(rankLcRg = fit_reg(.))
+  }))
+
+## Now 'regs' contains the fitted local regressions for each interval of each sample's thinned dataset
+
+# Define function to pull out and plot regression diagnostics
+plot_rankLcRg <- function(sample.id, interval_number) {
+  df %>%
+    filter(sample.id == sample.id) %>%
+    pluck("regs", 1, "rankLcRg", interval_number) %>%
+    plot()
+}
+```
+## Extract slope of best regression for each interval for each sample
+```{r}
+df.out <- df %>% 
+  unnest(regs) %>%
+  mutate(micromol.L.s = map_dbl(rankLcRg, ~ pluck(., "allRegs", "b1", 1)))
+```
+
+## Adjust by chamber volume and normalize to surface area
+```{r}
+### Merge rates with sample info
+pr <- left_join(
+  select(df.out, sample.id, Light_Percent, micromol.L.s),
+  distinct(metadata, sample.id, Treatment, Run, Chamber.Vol.L, Date)
+)
+
+## Correct for chamber volume and blanks
+pr <- pr %>%
+  mutate(micromol.s = micromol.L.s * Chamber.Vol.L)
+
+# Get blank values -- average for each run and light value in case multiple blanks
+blanks <- pr %>%
+  filter(grepl("BLANK", sample.id)) %>%
+  group_by(Run, Light_Percent) %>%
+  summarise(micromol.s.blank = mean(micromol.s))
+
+# Join blank values with rest of data and subtract values from samples for same run and light value
+pr <- left_join(pr, blanks) %>%
+  mutate(micromol.s.adj = micromol.s - micromol.s.blank) %>%
+  # After correcting for blank values, remove blanks from data
+  filter(!grepl("BLANK", sample.id))
+
+# Join surface area with rest of data
+pr <- left_join(pr, select(SA, sample.id, surface.area.cm2))
+
+# Normalize rates by surface area
+pr <- pr %>%
+  mutate(micromol.cm2.s = micromol.s.adj / surface.area.cm2,
+         micromol.cm2.h = micromol.cm2.s * 3600)
+
+Photo <- pr %>%
+  filter(Light_Percent ==331)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Resp <- pr %>%
+  filter(Light_Percent ==0)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Photo <- na.omit(Photo) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Photo)[1] <- "sample.id"
+Photo$Timepoint <- "Week3"
+Photo$measure <- "Photo"
+Resp <- na.omit(Resp) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Resp)[1] <- "sample.id"
+Resp$Timepoint <- "Week3"
+Resp$measure <- "Resp"
+
+write.csv(Photo, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week3.csv")
+write.csv(Resp, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week3.csv")
+```
+
+```{r}
+
+df_summary_Resp <- Resp %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Resp <- Resp %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Resp_Week3.pdf", width=6, height=6)
+r_plot<-df_summary_Resp %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Resp, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+df_summary_Photo <- Photo %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Photo <- Photo %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Photo_Week3.pdf", width=6, height=6)
+r_plot<-df_summary_Photo %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Photo, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+```
+
+
+#Week 4 of PR- August 05 - August 06 2024
+
+## Set working directory and get the file path
+```{r, warning = FALSE}
+
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use")
+
+path.p<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240805_06"
+
+getwd()
+```
+
+## Import data files
+```{r, warning = FALSE}
+#list all csv file names
+file.names<-basename(list.files(path = path.p, pattern = "csv$", recursive = TRUE))
+# omit metadata from files to be read in as data
+file.names <- file.names[!grepl("metadata", file.names)]   
+
+# Load Surface area
+SA <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv", header=T)
+
+# Load sample metadata
+Sample.Info <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240805_06/pr_sample_metadata.csv", header=T) #read in sample.info data
+
+# Load run metadata
+run.info <- read_csv(file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240805_06/pr_run_metadata.csv")
+```
+
+#Formating dataset for script
+```{r, warning = FALSE}
+# Join run and sample metadta first by sample id
+
+colnames(SA)[colnames(SA) == "Colony_id"] <- "sample.id" #changing the column name in SA to match the sample metadata column name
+metadata <- full_join(Sample.Info, run.info)%>%
+  mutate(Date = as_date(as.character(Date), format = "%Y%m%d", tz = ""))
+
+
+# Select only certain columnns
+metadata <- metadata %>%
+  select(sample.id, Run, Treatment, Species, Chamber.Vol.L, Date, Start.time, Stop.time, Light_Percent, Temp.Cat)
+
+# Read in all data files
+#edit sample.id name to remove .csv and the date from files
+df <- tibble(file.name = file.names) %>%
+  mutate(sample.id = gsub("_.*", "", file.name))%>%  # Get sample from filename and select for info before the first _
+  mutate(sample.id = gsub(".csv", "", sample.id),  #remove .csv from sample.id
+          info = map(sample.id, ~filter(metadata, sample.id == .)),           # Get associated sample info
+         data0 = map(file.name, ~read_csv(file.path(path.p, .), skip = 1, col_types = cols(.default = "d", Time = "t"))))   # Get associated O2 data
+
+# Select only Time, Value, and Temp columns from O2 data
+df <- df %>%
+  mutate(data0 = map(data0, ~select(., Time, Value, Temp)))%>%
+  mutate(data0 = map(data0, ~(.x %>% filter(complete.cases(.))))) #remove NAs 
+
+```
+
+## Use the time breaks in the sample info to link O2 data with light levels
+```{r, warning = FALSE}
+df <- df %>%
+  mutate(intervals = map2(data0, info, function(.x, .y) {
+    split(.x, f = cut(as.numeric(.x$Time), breaks = as.numeric(c(.y$Start.time, last(.y$Stop.time))),
+                      labels = as.character(.y$Light_Percent)))})) %>%
+  mutate(data = map(intervals, ~ unnest(tibble(.), .id = "Light_Percent")))
+
+## 'data' now contains the O2 data with the corresponding light level as another column
+## Example of what 'data' for each sample looks like:
+# df$data[[1]]
+
+```
+
+
+## Thin data
+```{r, fig.height = 8, fig.width = 8}
+# Set thinning parameter
+thin_par <- 20
+
+# Thin data for all samples
+df <- df %>%
+  mutate(thin_data = map(data, ~ slice(., seq(1, nrow(.), thin_par))))
+
+# Create plots for full dataset and thinned data
+df <- df %>%
+  mutate(data_plot = map2(data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)),
+    thin_data_plot = map2(thin_data, sample.id, ~ ggplot(.x, aes(x = Time, y = Value)) + 
+                            facet_wrap(~ as.numeric(Light_Percent), scales = "free") +
+                            geom_point() +
+                            labs(title = .y)))
+
+# Example of plots
+cowplot::plot_grid(df$data_plot[[1]], df$thin_data_plot[[1]], nrow = 2,
+                   labels = c("Example plot: all data", "Example plot: thinned data"))
+
+
+
+```
+
+## The full or thinned data plot for any sample can be accessed like this:
+```{r, warning = FALSE}
+df %>%
+  filter(sample.id == "DL-1-11") %>%
+  pull(thin_data_plot)
+```
+
+# Fit regressions to each interval for each sample
+```{r, warning = FALSE}
+# Define function for fitting LoLinR regressions to be applied to all intervals for all samples
+fit_reg <- function(df) {
+  rankLocReg(xall = as.numeric(df$Time), yall = df$Value, 
+             alpha = 0.2, method = "pc", verbose = FALSE)
+}
+
+# Setup for parallel processing
+plan(multisession)
+
+# Map LoLinR function onto all intervals of each sample's thinned dataset
+df <- df %>%
+  mutate(regs = furrr::future_map(thin_data, function(.) {       # future_map executes function in parallel
+    group_by(., Light_Percent) %>%
+    do(rankLcRg = fit_reg(.))
+  }))
+
+## Now 'regs' contains the fitted local regressions for each interval of each sample's thinned dataset
+
+# Define function to pull out and plot regression diagnostics
+plot_rankLcRg <- function(sample.id, interval_number) {
+  df %>%
+    filter(sample.id == sample.id) %>%
+    pluck("regs", 1, "rankLcRg", interval_number) %>%
+    plot()
+}
+```
+## Extract slope of best regression for each interval for each sample
+```{r}
+df.out <- df %>% 
+  unnest(regs) %>%
+  mutate(micromol.L.s = map_dbl(rankLcRg, ~ pluck(., "allRegs", "b1", 1)))
+```
+
+## Adjust by chamber volume and normalize to surface area
+```{r}
+### Merge rates with sample info
+pr <- left_join(
+  select(df.out, sample.id, Light_Percent, micromol.L.s),
+  distinct(metadata, sample.id, Treatment, Run, Chamber.Vol.L, Date)
+)
+
+## Correct for chamber volume and blanks
+pr <- pr %>%
+  mutate(micromol.s = micromol.L.s * Chamber.Vol.L)
+
+# Get blank values -- average for each run and light value in case multiple blanks
+blanks <- pr %>%
+  filter(grepl("BLANK", sample.id)) %>%
+  group_by(Run, Light_Percent) %>%
+  summarise(micromol.s.blank = mean(micromol.s))
+
+# Join blank values with rest of data and subtract values from samples for same run and light value
+pr <- left_join(pr, blanks) %>%
+  mutate(micromol.s.adj = micromol.s - micromol.s.blank) %>%
+  # After correcting for blank values, remove blanks from data
+  filter(!grepl("BLANK", sample.id))
+
+# Join surface area with rest of data
+pr <- left_join(pr, select(SA, sample.id, surface.area.cm2))
+
+# Normalize rates by surface area
+pr <- pr %>%
+  mutate(micromol.cm2.s = micromol.s.adj / surface.area.cm2,
+         micromol.cm2.h = micromol.cm2.s * 3600)
+
+Photo <- pr %>%
+  filter(Light_Percent ==331)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Resp <- pr %>%
+  filter(Light_Percent ==0)%>% 
+  separate(sample.id, c("Species","Genotype","Rep"), sep = "-", remove=FALSE)
+
+Photo <- na.omit(Photo) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Photo)[1] <- "sample.id"
+Photo$Timepoint <- "Week4"
+Photo$measure <- "Photo"
+Resp <- na.omit(Resp) %>% select("sample.id", micromol.cm2.h, Treatment, Genotype, Species)
+#colnames(Resp)[1] <- "sample.id"
+Resp$Timepoint <- "Week4"
+Resp$measure <- "Resp"
+
+write.csv(Photo, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week4.csv")
+write.csv(Resp, file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week4.csv")
+```
+
+```{r}
+
+df_summary_Resp <- Resp %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Resp <- Resp %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Resp_Week4.pdf", width=6, height=6)
+r_plot<-df_summary_Resp %>%
+    ggplot(., aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Resp, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+df_summary_Photo <- Photo %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+df_mean_Photo <- Photo %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Raw_Photo_Week4.pdf", width=6, height=6)
+r_plot<-df_summary_Photo %>%
+    ggplot(., aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Photo, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    #ylim(0,3)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12)); r_plot
+if (dev.cur() > 1) {
+  dev.off()
+}
+
+```
+
+#Week 5 of PR- August 10 - August 11 2024
+
+## Set working directory and get the file path
+```{r, warning = FALSE}
+
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use")
+
+path.p<-"C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240810_11"
+
+getwd()
+```
+
+## Import data files
+```{r, warning = FALSE}
+#list all csv file names
+file.names<-basename(list.files(path = path.p, pattern = "csv$", recursive = TRUE))
+# omit metadata from files to be read in as data
+file.names <- file.names[!grepl("metadata", file.names)]   
+
+# Load Surface area
+SA <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv", header=T)
+
+# Load sample metadata
+Sample.Info <- read.csv(file="C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240810_11/pr_sample_metadata.csv", header=T) #read in sample.info data
+
+# Load run metadata
+run.info <- read_csv(file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/PR_use/20240810_11/pr_run_metadata.csv")
 ```
 
 #Formating dataset for script
@@ -569,3 +1347,337 @@ if (dev.cur() > 1) {
 }
 
 ```
+COMBINED PLOTS
+
+Photosynthesis
+```{r}
+Pho.WK1 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week1.csv")
+Pho.WK2 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week2.csv")
+Pho.WK3 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week3.csv")
+Pho.WK4 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week4.csv")
+Pho.WK5 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Photo_Rawextracted_rates_Week5.csv")
+
+Pho <- rbind(Pho.WK1,Pho.WK3,Pho.WK4,Pho.WK5)
+Pho$Genotype <- as.factor(Pho$Genotype)
+df_summary_Pho <- Pho %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+df_mean_Pho <- Pho %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+
+Pho <- Pho %>%
+  select(sample.id, micromol.cm2.h, Species, Treatment, Timepoint) %>%
+  mutate(Timepoint = case_when( 
+    Timepoint == "Week1" ~ "TP1",
+    Timepoint == "Week3" ~ "TP2",
+    Timepoint == "Week4" ~ "TP3",
+    Timepoint == "Week5" ~ "TP4",
+    TRUE ~ NA_character_
+  ))
+frag_meta <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Coral_Fragment_Metadata.csv") %>%
+  mutate(Sample.ID = gsub("_", "-", Sample.ID))
+
+frag_meta <- frag_meta%>%
+  select(Sample.ID, Inital.Treament, Secondary.Treatment, Treatment.Tank)%>%
+  rename(Inital.Treatment = Inital.Treament)%>%
+  rename(sample.id = Sample.ID)
+
+Photo <- left_join (Pho, frag_meta, by = "sample.id")
+
+Photo$new_timepoint <- ifelse(Photo$Timepoint == "TP4", paste0(Photo$Timepoint, "_", Photo$Secondary.Treatment), Photo$Timepoint)
+
+Photo <- Photo %>%
+  mutate(Species = case_when( 
+    Species == "DL" ~ "Diploria labyrinthiformis",
+    Species == "MD" ~ "Madracis decactis",
+    TRUE ~ NA_character_
+  ))
+Photo <- Photo[-18, ]
+```
+
+Removing Outliers
+```{r}
+# Calculate the IQR
+Q1 <- quantile(Photo$micromol.cm2.h, 0.25)
+Q3 <- quantile(Photo$micromol.cm2.h, 0.75)
+IQR <- Q3 - Q1
+
+# Identify outliers
+outliers <- Photo$micromol.cm2.h[(Photo$micromol.cm2.h < (Q1 - 1.5 * IQR)) | (Photo$micromol.cm2.h > (Q3 + 1.5 * IQR))]
+print(outliers)
+
+Photo <- Photo %>%
+  filter(!(micromol.cm2.h %in% outliers))
+
+#Removing Acclimation 
+Photo2 <- Photo %>%
+  filter(new_timepoint != "TP1")
+```
+
+
+```{r}
+
+new_labels <- c("TP2" = "TP2","TP3" = "TP3", "TP4_Control" = "TP4 Control",
+  "TP4_High_Temp" = "TP4 High Heat")
+
+# Generate the plot OF chla
+ggplot(Photo2, aes(x = new_timepoint, y = micromol.cm2.h, color = Inital.Treatment)) +
+  geom_point(width = 0.1, position = position_jitterdodge(0.1), alpha = 0.1) +
+  stat_summary(fun = mean, geom = "point", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.5, position = position_dodge(0.8)) +
+  scale_fill_manual(name = "Inital.Treatment", values = c("blue", "darkred", "purple"))+
+  scale_color_manual(label = c("Control", "High Heat", "Low pH"), name = "Inital Treatment", values = c("blue", "darkred", "purple"))+
+  scale_x_discrete(labels = new_labels) +
+# facet_wrap(~ Species, nrow = 2) +
+  facet_wrap(~ Species, nrow = 2) +
+  labs(x = "Timepoint")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.6))+
+  theme(
+    panel.border = element_rect(colour = "black", fill = NA, size = 1),
+    strip.background = element_rect(colour = "black", fill = "white"),
+    panel.spacing = unit(1, "lines"),  # Add spacing between facets
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    strip.text = element_text(face = "bold")  # Make facet labels bold
+  )+ 
+  theme(
+    strip.placement = "outside", # Position facet labels outside the panels
+    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
+  )
+```
+# Visualize data
+pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/All_Photo.pdf", width=6, height=6)
+
+ggplot(df_summary_Pho, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+  geom_boxplot()+
+  facet_wrap(~Species)+
+  theme_classic()
+
+  ggplot(df_summary_Pho, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Pho, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue","purple"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue","purple"))+
+    ylab(expression(bold(paste("Photo rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.5)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12))
+dev.off()
+  
+```
+
+#Respiration
+
+```{r}
+Res.WK1 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week1.csv")
+Res.WK2 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week2.csv")
+Res.WK3 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week3.csv")
+Res.WK4 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week4.csv")
+Res.WK5 <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/PR/Resp_Rawextracted_rates_Week5.csv")
+
+Res <- rbind(Res_WK1,Res_WK3,Res_WK4,Res_WK5)
+Res$Genotype <- as.factor(Res$Genotype)
+df_summary_Res <- Res %>%
+  group_by(Genotype, Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+df_mean_Res <- Res %>%
+  group_by(Treatment, Species, Timepoint) %>%
+  summarise(mean_micromol_cm2_h = mean(micromol.cm2.h, na.rm = TRUE))
+```
+
+```{r}
+Res <- Res %>%
+  select(sample.id, micromol.cm2.h, Species, Treatment, Timepoint) %>%
+  mutate(Timepoint = case_when( 
+    Timepoint == "Week1" ~ "TP1",
+    Timepoint == "Week3" ~ "TP2",
+    Timepoint == "Week4" ~ "TP3",
+    Timepoint == "Week5" ~ "TP4",
+    TRUE ~ NA_character_
+  ))
+frag_meta <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/Coral_Fragment_Metadata.csv") %>%
+  mutate(Sample.ID = gsub("_", "-", Sample.ID))
+
+frag_meta <- frag_meta%>%
+  select(Sample.ID, Inital.Treament, Secondary.Treatment, Treatment.Tank)%>%
+  rename(Inital.Treatment = Inital.Treament)%>%
+  rename(sample.id = Sample.ID)
+
+Resp <- left_join (Res, frag_meta, by = "sample.id")
+
+Resp$new_timepoint <- ifelse(Resp$Timepoint == "TP4", paste0(Resp$Timepoint, "_", Resp$Secondary.Treatment), Resp$Timepoint)
+
+Resp <- Resp %>%
+  mutate(Species = case_when( 
+    Species == "DL" ~ "Diploria labyrinthiformis",
+    Species == "MD" ~ "Madracis decactis",
+    TRUE ~ NA_character_
+  ))
+Resp <- Resp[-18, ]
+```
+
+Removing Outliers
+```{r}
+# Calculate the IQR
+Q1 <- quantile(Resp$micromol.cm2.h, 0.25)
+Q3 <- quantile(Resp$micromol.cm2.h, 0.75)
+IQR <- Q3 - Q1
+
+# Identify outliers
+outliers <- Resp$micromol.cm2.h[(Resp$micromol.cm2.h < (Q1 - 1.5 * IQR)) | (Resp$micromol.cm2.h > (Q3 + 1.5 * IQR))]
+print(outliers)
+
+Resp2 <- Resp %>%
+  filter(!(micromol.cm2.h %in% outliers))
+
+#Removing Acclimation 
+Resp3 <- Resp2 %>%
+  filter(new_timepoint != "TP1")
+```
+
+```{r}
+
+new_labels <- c("TP2" = "TP2","TP3" = "TP3", "TP4_Control" = "TP4 Control",
+  "TP4_High_Temp" = "TP4 High Heat")
+
+# Generate the plot OF chla
+ggplot(Resp3, aes(x = new_timepoint, y = micromol.cm2.h, color = Inital.Treatment)) +
+  geom_point(width = 0.1, position = position_jitterdodge(0.1), alpha = 0.1) +
+  stat_summary(fun = mean, geom = "point", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.5, position = position_dodge(0.8)) +
+  scale_fill_manual(name = "Inital.Treatment", values = c("blue", "darkred", "purple"))+
+  scale_color_manual(label = c("Control", "High Heat", "Low pH"), name = "Inital Treatment", values = c("blue", "darkred", "purple"))+
+  scale_x_discrete(labels = new_labels) +
+# facet_wrap(~ Species, nrow = 2) +
+  facet_wrap(~ Species, nrow = 2) +
+  labs(x = "Timepoint")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.6))+
+  theme(
+    panel.border = element_rect(colour = "black", fill = NA, size = 1),
+    strip.background = element_rect(colour = "black", fill = "white"),
+    panel.spacing = unit(1, "lines"),  # Add spacing between facets
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    strip.text = element_text(face = "bold")  # Make facet labels bold
+  )+ 
+  theme(
+    strip.placement = "outside", # Position facet labels outside the panels
+    strip.background = element_rect(colour = "black", fill = "white") # Borders around facet labels
+  )
+```
+
+```{r}
+# Visualize data
+pdf("output/All_Respo.pdf", width=6, height=6)
+df_summary_Res
+
+ggplot(df_summary_Res, aes(x = Timepoint, y = mean_micromol_cm2_h, colour=Treatment)) +
+  geom_boxplot()+
+  facet_wrap(~Species)+
+  theme_classic()
+
+
+    ggplot(df_summary_Res, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment)) +
+    geom_point(aes(fill=Treatment, group=Genotype, shape=Genotype), size=2) + 
+    geom_point(data = df_mean_Res, aes(x = Timepoint, y = -mean_micromol_cm2_h, colour=Treatment), size = 4) + 
+    xlab("Timepoint") +
+    facet_wrap(vars(Species))+
+    scale_fill_manual(name="Treatment", values=c("gray","red","blue","purple"))+
+    scale_color_manual(name="Treatment", values=c("gray","red","blue","purple"))+
+    ylab(expression(bold(paste("Resp rate (µmol ", O[2], " cm"^-2, "min"^-1, ")")))) +
+    ylim(0,1.0)+
+    theme_classic() + 
+    theme(axis.title=element_text(face="bold", size=16),
+      axis.text=element_text(size=12, color="black"), 
+      legend.title=element_text(face="bold", size=14), 
+      legend.text=element_text(size=12))
+    
+    
+dev.off()
+```
+
+
+#Statistics
+
+#Do stats on photo by treatment, species and date 
+```{r}
+
+TP2<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP3",
+         timepoint !="TP4")
+
+TP3<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP2",
+         timepoint !="TP4")
+
+TP4<- chl2%>%
+  filter(timepoint != "TP0",
+         timepoint !="TP1",
+         timepoint !="TP2",
+         timepoint !="TP3")
+model <- aov(micromol.cm2.h ~ Treatment*Species*Timepoint, data = Resp3)
+summary(model)
+TukeyHSD(model)
+#Shows significant differences between species, treatment, treatment-species, date-treatement and between date-species-treatment. 
+to 
+install.packages("emmeans")
+install.packages("multcomp")
+library(emmeans)
+library(multcomp)
+
+# View post-hoc differences 
+emm = emmeans(model, ~ Treatment*Species*Timepoint)
+cld(emm, Letters=c(LETTERS)) #letter display
+pairs(emm)
+
+res.aov <- aov(chla.ug.cm2 ~ Treatment*Species, data = chl1)
+summary(res.aov)
+TukeyHSD(res.aov)
+
+```
+
+
+import data Plot
+```{r}
+
+Photo <- rbind(Photo2,Photo3,Photo4,Photo5)
+Photo <- Photo %>% rename(Sample.ID = sample.id)
+
+use<-full_join(Photo, data)
+
+Photo <- Photo[, -c(1, 4,5,8)]
+
+class(Photo)
+class(data)
+
+data <- data[, -c(1:4,6,9,10,11)]
+
+use <- use %>%
+  dplyr::mutate(Treatmentstage = case_when(
+    Timepoint == "Week4" ~ "Recovery",
+    Timepoint == "Week5" ~ "Stress",
+    Timepoint == "Week3" ~ "Priming",
+    Timepoint == "Week2" ~ "Priming",
+    TRUE ~ as.character(Timepoint)
+  ))
+  
+df_summary <- use %>%
+  group_by(Species, Treatmentstage, Inital.Treament,Secondary.Treatment) %>%
+  summarize(
+    photo_mean = mean(micromol.cm2.h),
+    photo_se = sd(micromol.cm2.h) / sqrt(n()))
+```
+
+

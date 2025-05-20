@@ -1,0 +1,295 @@
+---
+title: "Total Protein"
+author: "EL Strand"
+edited: "Florence Fields"
+date: "2025-01-05"
+output: html_document
+---
+
+Code modified from R. Cunning, H. Putnam, and E5 group [here](https://github.com/urol-e5/timeseries/blob/master/timepoint_1/scripts/Protein.Rmd) and [Emma Stand](https://github.com/hputnam/Acclim_Dynamics/blob/master/Scripts/Protein-Purple-Kit.Rmd)
+
+9-10 protein plates with each one containing a standard curve. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## install packages if you dont already have them
+if (!require("plyr")) install.packages("plyr")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("broom")) install.packages("broom")
+if (!require("Rmisc")) install.packages("Rmisc")
+if (!require("sjPlot")) install.packages("sjPlot")
+if (!require("insight")) install.packages("insight")
+
+
+
+# load packages
+library(tidyr)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(tidyverse)
+library(Rmisc)
+library(broom)
+library(lme4)
+library(car)
+library(sjPlot)
+library(purrr)
+library(readr)
+
+
+```
+
+#Read in all data files. 
+```{r}
+
+setwd("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Protein")
+
+prot_path <- "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Protein/" # Path to data directory
+
+getwd()
+
+
+# Define function to read in prot data
+read_prot <- function(file) {
+  prot_data <- read_csv(file, skip = 23, n_max = 24)%>%
+    select(-1)%>%
+    magrittr::set_colnames(c("row", 1:12, "wavelength"))%>%
+    fill(row)%>%
+    gather("col", "absorbance", -wavelength, -row)%>%
+    unite("well", c(row, col), sep = "")
+}
+
+all_prot_files <- list.files(path = prot_path, pattern = "*.csv")   # List all files in directory
+prot_platemaps <- list.files(path = prot_path, pattern = "map")     # List platemap files
+prot_data_files <- setdiff(all_prot_files, prot_platemaps) 
+
+# Read in all files into tibble
+df <- tibble(file = prot_data_files) %>%
+  separate(file, into = c("date", "plate"), remove = FALSE) %>%
+  unite(plate, date, plate) %>%
+  mutate(platemap = map(plate, ~read_csv(paste0(prot_path, ., "_map.csv"))),
+         prot_data = map(file, ~read_prot(paste0(prot_path, .)))) 
+
+# Print the resulting tibble
+print(df)
+         
+# Merge platemap and data for each plate
+df <- df %>%
+  mutate(merged = map2(platemap, prot_data, ~ right_join(.x, .y)))
+```
+
+Create standard curves. 
+```{r}
+# Create standard curve following kit instructions
+standards <- tribble(
+  ~std, ~BSA_ug.mL,
+  "A",        2000,
+  "B",        1500,
+  "C",        1000,
+  "D",         750,
+  "E",         500,
+  "F",         250,
+  "G",         125,
+  "H",          25,
+  "I",           0
+)
+
+std_curve <- df %>%
+  unnest(merged) %>%
+  filter(grepl("Standard", Fragment_ID)) %>%
+  select(Date_Processed, well, Fragment_ID, abs562 = `absorbance`) %>%
+  dplyr::rename(std = Fragment_ID) %>%
+  mutate(std = str_sub(std, 9, 9)) %>%
+  dplyr::group_by(Date_Processed, std) %>%
+  mutate(abs562.mean = mean(abs562)) %>% # calculates means using the above group by fxns 
+  select(-well, -abs562) %>% # taking out original values to then be able to remove duplicates
+  distinct() %>%
+  ungroup(std) %>% # the below fxn needs to be only grouped by plate
+  mutate(abs562 = abs562.mean - abs562.mean[std == "I"]) %>% # subtract blank absorbance value from all (adjusted value)
+  left_join(standards)
+```
+
+Fit a linear model for the standards. 
+```{r}
+mod <- lm(formula = BSA_ug.mL ~ abs562, data = std_curve)
+fitted <- mod %>% broom::augment()
+std_curve <- left_join(std_curve, fitted)
+
+# Plot standard curve
+std_curve_plot <- 
+  ggplot(aes(x = abs562, y = BSA_ug.mL, group=Date_Processed, color=Date_Processed), data = std_curve) +
+  geom_point()
+
+std_curve_plot + 
+  geom_line(data = std_curve, aes(x = abs562, y = .fitted)) +
+  labs(title = "Standard curve") + 
+  theme_classic()
+```
+
+Calculate protein concentration for all samples using standard curve
+```{r}
+prot <- df %>%
+  unnest(merged) %>%
+  filter(!grepl("Standard", Fragment_ID)) %>%                     # Get just samples (not standards)
+  select(Date_Processed, well, Fragment_ID, abs562 = `absorbance`) %>%        # Select only needed columns
+  filter(!is.na(Fragment_ID)) %>%                                 # Filter out empty wells
+  mutate(prot_ug.mL = map_dbl(abs562, ~ predict(mod, newdata = data.frame(abs562 = .)))) # Use standard curve to convert absorbance to protein 
+  
+std_curve_plot + 
+  geom_point(data = prot, aes(x = abs562, y = prot_ug.mL), pch = "X", cex = 5, alpha = 0.3) +
+  labs(title = "All samples projected on standard curve")
+
+prot <- prot %>% ## I keep this after the std curve plot so I can plot the abs562 above and take that column out below 
+  group_by(Date_Processed, Fragment_ID) %>%
+  mutate(prot_ug.mL = mean(prot_ug.mL)) %>% select(-well, -abs562) %>% distinct()
+
+## visual check to see if any protein samples are above the standard curve 
+## if so, I would have to dilute them and redo the sample 
+```
+
+Normalize to surface area
+```{r}
+# Surface area data
+sa <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv") %>% dplyr::rename(Fragment_ID = Colony_id) %>% select(Fragment_ID, surface.area.cm2)
+sa$Fragment_ID <- as.character(sa$Fragment_ID)
+
+# Tissue homogenate volume data
+homog_vols <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Airbrushing_data.csv") %>% select(Species, Fragment_ID, Homogenate.Vol,Tank
+)
+homog_vols$Fragment_ID <- as.character(homog_vols$Fragment_ID)
+
+data <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/Coral_Fragment_Metadata1.csv") %>% select(Sample.ID, Secondary.Treatment) %>% dplyr::rename(Fragment_ID = Sample.ID)
+
+# Join homogenate volumes and surface area with sample metadata
+metadata <- full_join(data, homog_vols)%>% full_join(sa)%>% na.omit() 
+
+
+# Join prot data with metadata
+prot <- left_join(prot, metadata) %>%
+  mutate(prot_ug = prot_ug.mL * Homogenate.Vol,
+         prot_ug.cm2 = prot_ug / surface.area.cm2,
+         prot_mg.cm2 = prot_ug.cm2 / 1000)
+
+## data vis and outlier check 
+boxplot(prot$prot_ug)
+hist(prot$prot_ug) 
+
+boxplot.stats(prot$prot_ug)$out
+
+
+prot %>% ggplot(aes(x=as.character(Date_Processed), y=prot_ug)) + geom_boxplot() #looking for any plate that is an outlier 
+
+
+prot %>% filter(!is.na(Species)) %>% select(-Date_Processed)%>%
+  write_csv(., path = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Protein/Soluble_Protein.csv")
+
+```
+Including Treatments and Calculating mean
+```{r}
+prot <- prot %>%
+  mutate(Priming_Treatment = NA_character_) %>%  # Create empty column if missing
+  mutate(Priming_Treatment = case_when(
+    Tank %in% c(6, 7) ~ "High Heat",
+    Tank %in% c(2, 3) ~ "Low pH",
+    Tank %in% c(4, 5) ~ "Control",
+    Tank %in% c("acclimation") ~ "Acclimation",
+    Tank %in% c("start of acclimation")~ "Start of Acclimation",
+    TRUE ~ Priming_Treatment  # Keep other values unchanged
+  ))
+
+prot <- prot %>%
+  mutate(Sample.Date = as.Date(as.character(Sample.Date), format = "%Y%m%d"))
+
+prot <- prot %>%
+  dplyr::mutate(Treatmentstage = case_when(
+    Sample.Date == "2024-08-06" ~ "Recovery",
+    Sample.Date == "2024-08-15" ~ "Stress",
+    Sample.Date == "2024-06-20" ~ "Acclimation",
+    Sample.Date == "2024-07-09" ~ "Acclimation",
+    Sample.Date == "2024-07-23" ~ "Priming",
+    TRUE ~ as.character(Sample.Date)
+  ))
+
+
+```
+
+Calculating the mean and SE
+```{r}
+df_summary <- prot %>%
+  group_by(Species, Treatmentstage,Priming_Treatment,Secondary.Treatment) %>%
+  summarize(
+    prot_mean = mean(prot_mg.cm2),
+    prot_se = sd(prot_mg.cm2) / sqrt(n())
+  )
+
+#Removing Acclimation rows
+df_summary <- df_summary[-c(1, 2, 3, 17), ]
+
+df_summary <- df_summary %>%
+  mutate(Priming_Treatment = case_when(
+    Priming_Treatment == "High Heat" ~ "High Temp",
+    TRUE ~ Priming_Treatment  # Keeps other values unchanged
+  ))
+
+df_summary <- df_summary %>%
+  mutate(Secondary.Treatment = case_when(
+    Secondary.Treatment == "High_Temp" ~ "High Temp",
+    TRUE ~ Secondary.Treatment  # Keeps other values unchanged
+  ))
+
+
+```
+
+Plot te graph
+```{r}
+ggplot(df_summary, aes(x = Priming_Treatment, y = prot_mean, 
+                         color = ifelse(Treatmentstage == "Stress", Secondary.Treatment, "black"), 
+                         fill = ifelse(Treatmentstage == "Stress", Secondary.Treatment, "black"),
+                         group = Priming_Treatment)) + 
+  geom_errorbar(aes(ymin = prot_mean - prot_se, ymax = prot_mean + prot_se), 
+                width = 0.3, position = position_dodge(width = 0.75), linewidth = 0.5) + 
+  geom_point(aes(shape = Priming_Treatment), position = position_dodge(width = 0.75), size = 3) + 
+  facet_grid(Species ~ Treatmentstage, scales = "free_x") + 
+  theme_classic() + 
+  scale_color_manual(name = "Secondary Treatment", values = c("Control" = "blue", "High Temp" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_fill_manual(name = "Secondary Treatment",
+                    values = c("Control" = "blue", "High Temp" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_shape_manual(name = "Primary Treatment", values = c("Control" = 16, "High Temp" = 17, "Low pH" = 18)) + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), 
+      panel.spacing = unit(0.3, "lines"), 
+      panel.border = element_rect(color = "black", fill = NA)) +
+labs(x = "Priming Treatment", y = expression("Average Protein (µg/cm"^2*")"))
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Protein/protein_point.pdf", device = "pdf", width = 8, height = 6)
+
+```
+
+Statistics
+```{r}
+
+DL <- prot %>%
+  filter(!grepl("Madracis decactis", Species))
+
+#DL STATS
+
+model <- aov(prot_mg.cm2 ~ Treatmentstage, data = DL)
+summary(model)
+
+```
+One way - Dlab
+
+```{r}
+
+MD <- prot %>%
+  filter(!grepl("Diploria labyrinthiformis", Species))
+
+
+model <- aov(prot_mg.cm2 ~ Treatmentstage, data = MD)
+summary(model)
+
+```
+Mdec
+

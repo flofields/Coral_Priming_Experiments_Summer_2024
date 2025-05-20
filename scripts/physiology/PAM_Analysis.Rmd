@@ -29,6 +29,7 @@ library(lmerTest)
 library(cowplot)
 library(Hmisc)
 library(ggstatsplot)
+library(dplyr)
 ```
 
 ## First, I am going to analyze the data from the larval samples. 
@@ -38,19 +39,20 @@ library(ggstatsplot)
 pam_data <- read.csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Pam/All_Pam_Data.csv", na.strings=c("","NA"))
 head(pam_data)
 tail(pam_data)
+pam_data$Colony <- ifelse(pam_data$Colony == 5, 3, pam_data$Colony)
 ```
 
 ## Manipulate data frame 
 
-Remove NAs from colony 
 ```{r}
-#pam_data <- pam_data %>%
-#  drop_na(Colony)
-```
 
-Set date
-```{r}
-#pam_data$DateMeasured <- as.POSIXct(pam_data$DateMeasured, format = "%m/%d/%y")
+pam_data <- pam_data %>%
+  dplyr::mutate(Treatment = case_when(
+    Tank %in% c(6, 7) ~ "High Heat",
+    Tank %in% c(2, 3) ~ "Low pH",
+    Tank %in% c(4, 5) ~ "Control",
+    TRUE ~ Treatment  # Keep other values unchanged
+  ))
 ```
 
 rename colounm heads 
@@ -66,63 +68,283 @@ colnames(pam_data)[colnames(pam_data) == "Y.II."] <- "Fv.Fm.II"
 colnames(pam_data)[colnames(pam_data) == "Y.III."] <- "Fv.Fm.III"
 colnames(pam_data)[colnames(pam_data) == "Fo..avg."] <- "Fo.avg"
 colnames(pam_data)[colnames(pam_data) == "Fm..avg."] <- "Fm.avg"
-colnames(pam_data)[colnames(pam_data) == "Y.avg."] <- "Fv.Fm_avg"
+colnames(pam_data)[colnames(pam_data) == "Y.avg."] <- "FvFm_avg"
 
 as.character(pam_data$DateMeasured)
-```
-## Make plots, identify outliers and do statistics 
 
-
-Plot Fv/Fm by treatment, species and date
-```{r}
-ggplot(pam_data, aes(x = as.character(DateMeasured), y = Fv.Fm_avg, color = Treatment)) +
-  geom_boxplot(aes(color=Treatment), width=.5, outlier.shape= NA)+
-  coord_cartesian(ylim = c(0.35, 0.7))+
-  #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
-  #geom_violin(aes(color = Treatment)) +
-  #scale_fill_manual(values=c("lightblue", "pink"))+
-  scale_colour_manual(values=c("blue", "green","red","purple"))+
-  #theme_bw() +
-  facet_wrap(~ Species)+
-  theme_bw() + 
- theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  xlab("Date")+
-#geom_boxplot(aes(color = Species)) +
-  #geom_violin()
-pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_date.pdf")
-
-
-
+pam_data<- pam_data %>%
+  mutate(Species = ifelse(Species == "DL", "Diploria labyrinthiformis", Species))
+pam_data<- pam_data %>%
+  mutate(Species = ifelse(Species == "MD", "Madracis decactis", Species))
+pam_data<- pam_data %>%
+  mutate(Tank = ifelse(Tank == "8", "Acclimation", Tank))
 ```
 
-Do stats on Fv/Fm by treatment, species and date 
+#Standard error calculations
 ```{r}
-model <- aov(Fv.Fm_avg ~ Treatment*Species*DateMeasured, data = pam_data)
+
+# Ensure there are no NA values and check the structure of the data
+pam_data <- pam_data %>%
+  filter(!is.na(FvFm_avg))
+
+# Calculate the average and standard error for each species and timepoint
+pam_summary <- pam_data %>%
+  group_by(Species, DateMeasured, Treatment, Tank) %>%
+  dplyr::summarize(
+    Fv.Fm_Mean = mean(FvFm_avg, na.rm = TRUE),
+    Fv.Fm_SE = sd(FvFm_avg, na.rm = TRUE) / sqrt(dplyr::n()))
+
+# Print the summary data frame
+print(pam_summary)
+
+# Save the dataset as a CSV file
+write.csv(pam_summary, file = "C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/pam/pam_summary.csv")
+
+
+# Print the first few rows of the filtered data for debugging
+print(head(pam_summary))
+
+
+```
+
+#Creating a ssecondary treatment colunm
+```{r}
+
+pam_data2 <- pam_data%>%
+  mutate(secondary_treatment= case_when(                    
+    DateMeasured %in% c("20240807", "20240809", "20240815") & Tank %in% c(2, 4, 6) ~ "High Heat",
+    DateMeasured %in% c("20240807", "20240809", "20240815") & Tank %in% c(3, 5, 7) ~ "Control",
+      TRUE ~ NA_character_  # Assign NA to all other rows
+    )
+  )
+pam_data2$DateMeasured <- as.Date(as.character(pam_data2$DateMeasured), format = "%Y%m%d")
+
+
+pam_data3<- pam_data2 %>%
+  dplyr::select(DateMeasured, Species, Treatment, Tank, FvFm_avg, secondary_treatment)%>%
+  mutate(Treatmentstage = case_when(
+    DateMeasured == "2024-08-07" ~ "Stress",
+    DateMeasured == "2024-08-09" ~ "Stress",
+    DateMeasured == "2024-08-15" ~ "Stress",
+    DateMeasured == "2024-07-02" ~ "Acclimation",
+    DateMeasured == "2024-07-19" ~ "Priming",
+    DateMeasured == "2024-07-23" ~ "Priming",
+    DateMeasured == "2024-07-26" ~ "Recovery",
+    DateMeasured == "2024-07-30" ~ "Recovery",
+    DateMeasured == "2024-07-05" ~ "Acclimation",
+    TRUE ~ as.character(DateMeasured)
+  ))
+
+#remove outliers
+# Calculate the IQR
+Q1 <- quantile(pam_data3$FvFm_avg, 0.25)
+Q3 <- quantile(pam_data3$FvFm_avg, 0.75)
+IQR <- Q3 - Q1
+
+# Identify outliers
+outliers <- pam_data3$FvFm_avg[(pam_data3$FvFm_avg < (Q1 - 1.5 * IQR)) | (pam_data3$FvFm_avg > (Q3 + 1.5 * IQR))]
+print(outliers)
+
+pam_data4 <- pam_data3 %>%
+  filter(!(FvFm_avg %in% outliers))
+
+# Calculate the average and standard error 
+pam_summary2 <- pam_data3 %>%
+  group_by(Species, DateMeasured, Treatment, secondary_treatment, Treatmentstage) %>%
+  dplyr::summarize(
+    Fv.Fm_Mean = mean(FvFm_avg, na.rm = TRUE),
+    Fv.Fm_SE = sd(FvFm_avg, na.rm = TRUE) / sqrt(dplyr::n()))
+
+pam_summary3 <- pam_data4 %>%
+  group_by(Species, DateMeasured, Treatment, secondary_treatment, Treatmentstage) %>%
+  dplyr::summarize(
+    Fv.Fm_Mean = mean(FvFm_avg, na.rm = TRUE),
+    Fv.Fm_SE = sd(FvFm_avg, na.rm = TRUE) / sqrt(dplyr::n()))
+
+#Removing Acclimation rows with outliers
+pam_summary4 <- pam_summary2 %>%
+  filter(Treatment != "Acclimation")
+
+
+pam_summary5 <- pam_summary3 %>%
+  filter(Treatment != "Acclimation")
+
+
+
+```
+
+
+
+Plot based off of pam_data3
+```{r}
+
+#Generate the plot using means
+
+ggplot(pam_summary4, aes(as.character(DateMeasured), Fv.Fm_Mean, color = Treatment, fill = secondary_treatment)) +
+  geom_errorbar(aes(ymin = Fv.Fm_Mean - Fv.Fm_SE, ymax = Fv.Fm_Mean + Fv.Fm_SE), 
+                width = 0.3, position = position_dodge(width = 0.75), linewidth = 0.5) +
+  geom_point(aes(shape = Treatment), position = position_dodge(width = 0.75), size = 3)+
+  facet_grid(Species ~ Treatmentstage, scales = "free_x")+
+  theme_classic()+
+  scale_color_manual(values = c("Control" = "lightblue", "High Heat" = "red", "Low pH" = "purple")) +
+  scale_fill_manual(values = c("Control" = "blue", "High Heat" = "darkred", "NA" = "grey"))+
+  scale_shape_manual(values = c("Control" = 16, "High Heat" = 17, "Low pH" = 18))+
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.spacing = unit(0.3, "lines"),
+     panel.border = element_rect(color = "black", fill = NA)  )+
+  labs(x = "Date", y = "Fv/Fm")
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/pam/pam_point.pdf", device = "pdf", width = 8, height = 6)
+
+
+
+
+
+ggplot(pam_summary4, aes(x = as.character(DateMeasured), y = Fv.Fm_Mean, 
+                         color = ifelse(Treatmentstage == "Stress", secondary_treatment, "black"), 
+                         fill = ifelse(Treatmentstage == "Stress", secondary_treatment, "black"),
+                         group = Treatment)) + 
+  geom_errorbar(aes(ymin = Fv.Fm_Mean - Fv.Fm_SE, ymax = Fv.Fm_Mean + Fv.Fm_SE), 
+                width = 0.3, position = position_dodge(width = 0.75), linewidth = 0.5) + 
+  geom_point(aes(shape = Treatment), position = position_dodge(width = 0.75), size = 3) + 
+  facet_grid(Species ~ Treatmentstage, scales = "free_x") + 
+  theme_classic() + 
+  scale_color_manual(name = "Secondary Treatment", values = c("Control" = "blue", "High Heat" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_fill_manual(name = "Secondary Treatment",
+                    values = c("Control" = "blue", "High Heat" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_shape_manual(name = "Primary Treatment", values = c("Control" = 16, "High Heat" = 17, "Low pH" = 18)) + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), 
+        panel.spacing = unit(0.3, "lines"), 
+        panel.border = element_rect(color = "black", fill = NA)) + 
+  labs(x = "Date", y = "Fv/Fm")
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/pam/pam_point_final.pdf", device = "pdf", width = 8, height = 6)
+```
+
+
+
+Do stats on Fv/Fm by treatment, species and date on Dlab
+```{r}
+DL <- pam_data3 %>%
+  filter(!grepl("Madracis decactis", Species))
+
+#DL STATS
+
+model <- aov(FvFm_avg ~ DateMeasured*Treatment*Treatmentstage, data = DL)
 summary(model)
 #Shows significant differences between species, treatment, treatment-species, date-treatement and between date-species-treatment. 
-
+Dlab
+                                       Df Sum Sq Mean Sq F value   Pr(>F)    
+DateMeasured                            1 0.0569 0.05690  35.551 4.51e-09 ***
+Treatment                               3 0.1408 0.04694  29.326  < 2e-16 ***
+Treatmentstage                          2 0.0605 0.03027  18.911 1.16e-08 ***
+DateMeasured:Treatment                  3 0.0425 0.01415   8.844 9.91e-06 ***
+DateMeasured:Treatmentstage             2 0.0115 0.00576   3.600    0.028 *  
+Treatment:Treatmentstage                4 0.0055 0.00136   0.852    0.493    
+DateMeasured:Treatment:Treatmentstage   3 0.0080 0.00267   1.665    0.173    
+Residuals                             537 0.8595 0.00160                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # View post-hoc differences 
-emm = emmeans(model, ~ Treatment*Species*DateMeasured)
+emm = emmeans(model, ~ Treatment*DateMeasured)
+cld(emm, Letters=c(LETTERS)) #letter display
+pairs(emm)
+TukeyHSD(model)
+```
+Dlab
+
+```{R}
+MD <- pam_data3 %>%
+  filter(!grepl("Diploria labyrinthiformis", Species))
+
+#MD STATS
+
+model <- aov(FvFm_avg ~ DateMeasured*Treatment*Treatmentstage, data = MD)
+summary(model)
+#Shows significant differences between species, treatment, treatment-species, date-treatement and between date-species-treatment. 
+Mdec
+                                       Df Sum Sq Mean Sq F value Pr(>F)    
+DateMeasured                            1 0.1964 0.19641 117.407 <2e-16 ***
+Treatment                               3 0.5174 0.17246 103.095 <2e-16 ***
+Treatmentstage                          2 0.0005 0.00025   0.148 0.8621    
+DateMeasured:Treatment                  3 0.0133 0.00443   2.645 0.0488 *  
+DateMeasured:Treatmentstage             2 0.0065 0.00327   1.958 0.1425    
+Treatment:Treatmentstage                4 0.0073 0.00182   1.086 0.3632    
+DateMeasured:Treatment:Treatmentstage   3 0.0182 0.00607   3.626 0.0132 *  
+Residuals                             411 0.6875 0.00167                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# View post-hoc differences 
+emm = emmeans(model, ~ Intial_treatment*Date)
 cld(emm, Letters=c(LETTERS)) #letter display
 pairs(emm)
 
+TukeyHSD(model)
 ```
+Mdec
 
-Plot Fv/Fm by treatment, species and colony
 ```{r}
-ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg, color = Treatment)) +
-  geom_boxplot() +
+pam_data4$SecondaryColor <- ifelse(pam_data3$Date %in% c("2024-08-07", "2024-08-09", "2024-08-15"), pam_data4$secondary_treatment, NA)
+
+
+ggplot(pam_data4, aes(x = Date, y = Fv.Fm_avg, color = Intial_treatment, fill = SecondaryColor)) +
+  geom_point()+
+  facet_grid(Species ~ Treatmentstage)
+  
+  geom_errorbar(aes(ymin = chlc2_mean - chlc2_se, ymax = chlc2_mean + chlc2_se), 
+                width = 0.2, position = position_dodge(width = 0.75)) +
+  geom_point(position = position_dodge(width = 0.75), shape = 21, size = 3) +
+  facet_grid(Species ~ TreatmentStage) +
+  theme_classic()+
+  scale_color_manual(
+    name = "Initial Treatment",
+    values = c("Control" = "lightblue", "High_Temp" = "red", "Low_pH" = "purple")) +
+  scale_fill_manual(
+    name = "Secondary Color",
+    values = c("Control" = "blue", "High_Temp" = "darkred", "NA" = "grey")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        panel.spacing = unit(0.3, "lines"),
+     panel.border = element_rect(color = "black", fill = NA)  )+
+  labs(x = "Initial Treatment", y = expression("Average Chlorophyll C2 (µg/cm"^2*")"))+
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/Chlc2-3.pdf", device = "pdf", width = 8, height = 6)
+
+pam_data3 <- pam_data3[, -c(1,2,5,7:18)]
+
+pam_summary_avg <- pam_data3 %>%
+  summarize(
+    Fv.Fm_mean = mean(Fv.Fm_avg), 
+    Fv.Fm_se = sqrt(sum(Fv.Fm_avg^2)/n()),
+    .groups = "drop"
+  )
+
+ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg)) +
+  geom_boxplot(aes(colour=Treatment), width=.5, outlier.shape= NA) +
   coord_cartesian(ylim = c(-0, 0.7))+
   #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
   #geom_violin(aes(color = Treatment)) +
   #scale_fill_manual(values=c("lightblue", "pink"))+
   scale_colour_manual(values=c("blue", "green","red","purple"))+
+  theme_bw()+ theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())
+```
+
+
+
+Plot Fv/Fm by treatment, species and colony
+```{r}
+ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg, color = Temperature)) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(-0, 0.7))+
+  #geom_point(aes(fill = Treatment, group = colony), pch = 21, size = 4) +
+  #geom_violin(aes(color = Treatment)) +
+  #scale_fill_manual(values=c("lightblue", "pink"))+
+  scale_colour_manual(values=c("blue", "black","red","purple"))+
   theme_bw() +
-  facet_wrap(~Colony)+
+  facet_wrap(~ Colony)+ theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())
   #geom_boxplot(aes(color = Treatment)) +
   #geom_violin()
-pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_colony.pdf")
+#pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_colony.pdf")
 ```
 Do stats on Fv/Fm by treatment, species and colony 
 ```{r}
@@ -145,7 +367,8 @@ ggplot(pam_data, aes(x = Species, y = Fv.Fm_avg)) +
   #geom_violin(aes(color = Treatment)) +
   #scale_fill_manual(values=c("lightblue", "pink"))+
   scale_colour_manual(values=c("blue", "green","red","purple"))+
-  theme_bw()+
+  theme_bw()+ theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())+
   #geom_boxplot(aes(color = Treatment)) +
   #geom_violin()
 pdf("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Pam/By_species.pdf")
