@@ -197,7 +197,7 @@ ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Primin
 
 
 
-
+pam_summary4 <- pam_summary4[pam_summary4$DateMeasured != as.Date("2024-08-09"), ]
 
 ggplot(pam_summary4, aes(x = as.character(DateMeasured), y = Fv.Fm_Mean, 
                          color = ifelse(Treatmentstage == "Stress", secondary_treatment, "black"), 
@@ -216,7 +216,7 @@ ggplot(pam_summary4, aes(x = as.character(DateMeasured), y = Fv.Fm_Mean,
         panel.spacing = unit(0.3, "lines"), 
         panel.border = element_rect(color = "black", fill = NA)) + 
   labs(x = "Date", y = "Fv/Fm")
-ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/pam/pam_point_final.pdf", device = "pdf", width = 8, height = 6)
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/pam/pam_point_final2.pdf", device = "pdf", width = 8, height = 6)
 ```
 
 

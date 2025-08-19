@@ -124,19 +124,25 @@ df1 <- df1 %>%
 df1 <- df1 %>%
   mutate(chla.ug.ml = (11.43 * adj663)/0.6 - (0.64 * adj630)/0.6,
         chlc2.ug.ml = (27.09 * adj630)/0.6 - (3.63 * adj663)/0.6)
+
+colnames(df1)[2] <- "Sample.ID" 
+
 ```
 
 # Normalize to surface area
 ```{r}
 # Load homogenate volume
 homog.vol <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/data/physiology/Airbrushing_data.csv")%>%
-  select(Species, Fragment_ID, Homogenate.Vol)
+  select(Species, Sample.ID, Homogenate.Vol)
+
 chl <- full_join(df1, homog.vol)
 
 # Load surface area
 sa <- read_csv("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Surface_Area/Surface_Area.csv")%>%
-rename(Fragment_ID = Colony_id)
+rename(Sample.ID = Colony_id)
 chl1 <- full_join(chl, sa)
+
+colnames(chl1)[2] <- "Fragment_ID"
 
 # Multiply chlorophyll by the homogenate volume and divide by surface area
 chl1 <- chl1 %>%
@@ -328,10 +334,30 @@ ggplot(df_summary2_avg, aes(x = Inital.Treatment, y = chla_mean, color = Inital.
   theme(axis.text.x = element_text(angle = 35, hjust = 1),
         panel.spacing = unit(0.3, "lines"),
      panel.border = element_rect(color = "black", fill = NA)  )+
-  labs(x = "Initial Treatment", y = expression("Average Chlorophyll a (µg/cm"^2*")"))+
+  labs(x = "Initial Treatment", y = expression("Average Chlorophyll a (µg/cm"^2*")"))
 ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/chlorophyll/Chla3.pdf", device = "pdf", width = 8, height = 6)
 
+colnames(df_summary2_avg)[3] <- "Priming_Treatment"
 
+
+ggplot(df_summary2_avg, aes(x = Priming_Treatment, y = chla_mean, 
+                         color = ifelse(Treatmentstage == "Stress", Secondary.Treatment, "black"), 
+                         fill = ifelse(Treatmentstage == "Stress", Secondary.Treatment, "black"),
+                         group = Priming_Treatment)) + 
+  geom_errorbar(aes(ymin = chla_mean - chla_se, ymax = chla_mean + chla_se), 
+                width = 0.3, position = position_dodge(width = 0.75), linewidth = 0.5) + 
+  geom_point(aes(shape = Priming_Treatment), position = position_dodge(width = 0.75), size = 3) + 
+  facet_grid(Species ~ Treatmentstage, scales = "free_x") + 
+  theme_classic() + 
+  scale_color_manual(name = "Secondary Treatment", values = c("Control" = "blue", "High Temp" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_fill_manual(name = "Secondary Treatment",
+                    values = c("Control" = "blue", "High Temp" = "darkred", "Low pH" = "purple", "NA" = "black")) + 
+  scale_shape_manual(name = "Primary Treatment", values = c("Control" = 16, "High Temp" = 17, "Low pH" = 18)) + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), 
+      panel.spacing = unit(0.3, "lines"), 
+      panel.border = element_rect(color = "black", fill = NA)) +
+labs(x = "Priming Treatment", y = expression("Average Chlorophyll a (µg/cm"^2*)"))
+ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Priming_Experiments_Summer_2024/output/physiology/Protein/protein_point.pdf", device = "pdf", width = 8, height = 6)
 ```
 
 #PLOT chlc2 

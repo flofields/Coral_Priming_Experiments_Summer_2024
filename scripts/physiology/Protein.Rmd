@@ -269,13 +269,13 @@ ggsave("C:/Users/flo_f/OneDrive - University of Rhode Island/GitHub/Coral_Primin
 
 Statistics
 ```{r}
-
+colnames(prot)[15] <- "TreatmentStage"
 DL <- prot %>%
   filter(!grepl("Madracis decactis", Species))
 
 #DL STATS
 
-model <- aov(prot_mg.cm2 ~ Treatmentstage, data = DL)
+model <- aov(prot_mg.cm2 ~ Priming_Treatment*Secondary_Treatment*TreatmentStage, data = DL)
 summary(model)
 
 ```
@@ -287,7 +287,7 @@ MD <- prot %>%
   filter(!grepl("Diploria labyrinthiformis", Species))
 
 
-model <- aov(prot_mg.cm2 ~ Treatmentstage, data = MD)
+model <- aov(prot_mg.cm2 ~ Priming_Treatment*Secondary_Treatment*TreatmentStage, data= MD)
 summary(model)
 
 ```
